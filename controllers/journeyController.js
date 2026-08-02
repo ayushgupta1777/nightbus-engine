@@ -4,6 +4,74 @@ const Segment = require('../models/Segment');
 const Journey = require('../models/Journey');
 
 /**
+ * Smart Location Token Extraction
+ * Extracts main city/town names from long addresses or Google Places descriptions
+ */
+function extractLocationTokens(locationStr) {
+  if (!locationStr) return [];
+  const ignoredWords = new Set([
+    'bus', 'stand', 'isbt', 'junction', 'jn', 'road', 'chowk', 'mission',
+    'india', 'madhya', 'pradesh', 'mp', 'up', 'state', 'district', 'dist', 'city'
+  ]);
+  const parts = locationStr
+    .split(/[,/\-\s]+/)
+    .map(w => w.trim())
+    .filter(w => w.length >= 3 && !ignoredWords.has(w.toLowerCase()));
+  
+  if (parts.length === 0) {
+    return [locationStr.trim()];
+  }
+  return parts;
+}
+
+/**
+ * Smart Stop Matching
+ * Matches a route stop against a customer's searched location string or tokens
+ */
+function findStopIndex(route, locationStr) {
+  if (!route || !route.stops || !locationStr) return -1;
+  const rawLower = locationStr.toLowerCase().trim();
+  const tokens = extractLocationTokens(locationStr);
+
+  return route.stops.findIndex(stop => {
+    const stopName = (stop.name || '').toLowerCase();
+    const stopVillage = (stop.village || '').toLowerCase();
+    const stopDistrict = (stop.district || '').toLowerCase();
+
+    // 1. Direct substring match
+    if (stopName.includes(rawLower) || rawLower.includes(stopName)) return true;
+    if (stopVillage && (stopVillage.includes(rawLower) || rawLower.includes(stopVillage))) return true;
+
+    // 2. Significant Token Match (e.g. "Katni", "Jabalpur", "Bhopal", "Indore")
+    return tokens.some(token => {
+      const tok = token.toLowerCase();
+      if (stopName.includes(tok) || tok.includes(stopName)) return true;
+      if (stopVillage && (stopVillage.includes(tok) || tok.includes(stopVillage))) return true;
+      if (stopDistrict && (stopDistrict.includes(tok) || tok.includes(stopDistrict))) return true;
+      if (Array.isArray(stop.aliases) && stop.aliases.some(a => a.toLowerCase().includes(tok))) return true;
+      return false;
+    });
+  });
+}
+
+/**
+ * Flexible Day Matching Query
+ * Matches routes operating on the specific day, daily, or everyday
+ */
+function getDayMatchQuery(dayName) {
+  return {
+    isActive: true,
+    $or: [
+      { days: dayName },
+      { days: { $size: 0 } },
+      { scheduleType: 'daily' },
+      { days: { $in: ['Daily', 'all', 'All', 'Everyday'] } },
+      { days: { $exists: false } }
+    ]
+  };
+}
+
+/**
  * SMART JOURNEY SEARCH
  * - Finds direct routes
  * - Automatically generates 2-3 segment connecting routes
@@ -100,22 +168,17 @@ async function findDirectJourneys(from, to, dayName, passengers) {
 
   try {
     // Find routes that have both from and to
-    const directRoutes = await Route.find({
-      isActive: true,
-      days: dayName,
-      'stops.name': { $all: [new RegExp(from, 'i'), new RegExp(to, 'i')] }
-    }).populate({
+    const directRoutes = await Route.find(getDayMatchQuery(dayName)).populate({
       path: 'busId',
       populate: { path: 'ownerId', select: 'ownerSettings' }
     });
 
     for (const route of directRoutes) {
-      const fromIndex = route.stops.findIndex(
-        s => s.name.toLowerCase().includes(from.toLowerCase())
-      );
-      const toIndex = route.stops.findIndex(s => s.name.toLowerCase().includes(to.toLowerCase()));
+      if (!route || !route.busId) continue;
+      const fromIndex = findStopIndex(route, from);
+      const toIndex = findStopIndex(route, to);
 
-      if (fromIndex < toIndex) {
+      if (fromIndex !== -1 && toIndex !== -1 && fromIndex < toIndex) {
         // Loop through each active round (with fallback to default round if rounds array is empty)
         let roundsToUse = route.rounds;
         if (!roundsToUse || roundsToUse.length === 0) {
@@ -360,28 +423,16 @@ async function findLegs(from, to, dayName, passengers) {
   const legs = [];
 
   try {
-    const query = {
-      isActive: true,
-      days: dayName
-    };
-
-    if (to) {
-      query['stops.name'] = { $all: [new RegExp(from, 'i'), new RegExp(to, 'i')] };
-    } else {
-      query['stops.name'] = new RegExp(from, 'i');
-    }
-
-    const routes = await Route.find(query).populate('busId');
+    const routes = await Route.find(getDayMatchQuery(dayName)).populate('busId');
 
     for (const route of routes) {
-      const fromIndex = route.stops.findIndex(
-        s => s.name.toLowerCase().includes(from.toLowerCase())
-      );
+      if (!route || !route.busId) continue;
+      const fromIndex = findStopIndex(route, from);
       if (fromIndex === -1) continue;
 
       let toIndex = -1;
       if (to) {
-        toIndex = route.stops.findIndex(s => s.name.toLowerCase().includes(to.toLowerCase()));
+        toIndex = findStopIndex(route, to);
         if (toIndex === -1 || toIndex <= fromIndex) continue;
       } else {
         // Return all possible destinations from this stop
@@ -419,6 +470,12 @@ async function findLegs(from, to, dayName, passengers) {
         }
         return legs;
       }
+
+      const bookedSeats = await Segment.countDocuments({
+        routeId: route._id,
+        status: { $in: ['confirmed', 'boarded', 'completed'] }
+      });
+      const availableSeats = route.busId.totalSeats - bookedSeats;
 
       if (availableSeats >= passengers) {
         // Iterate through rounds (with fallback to default round if rounds array is empty)
@@ -494,14 +551,14 @@ async function findNextAvailableDate(from, to, startDate) {
         'Sat'
       ][checkDate.getDay()];
 
-      const routes = await Route.find({
-        isActive: true,
-        days: dayName,
-        'stops.name': { $all: [new RegExp(from, 'i'), new RegExp(to, 'i')] }
-      }).lean();
+      const routes = await Route.find(getDayMatchQuery(dayName)).lean();
 
-      if (routes.length > 0) {
-        return checkDate.toISOString().split('T')[0];
+      for (const route of routes) {
+        const fromIdx = findStopIndex(route, from);
+        const toIdx = findStopIndex(route, to);
+        if (fromIdx !== -1 && toIdx !== -1 && fromIdx < toIdx) {
+          return checkDate.toISOString().split('T')[0];
+        }
       }
     }
 
@@ -519,20 +576,17 @@ async function findIntermediateStops(from, to, dayName) {
   const intermediates = new Set();
 
   try {
-    const routes = await Route.find({
-      isActive: true,
-      days: dayName
-    });
+    const routes = await Route.find(getDayMatchQuery(dayName));
 
     for (const route of routes) {
-      const stops = route.stops.map(s => s.name);
-      const fromIdx = stops.findIndex(n => n.toLowerCase().includes(from.toLowerCase()));
-      const toIdx = stops.findIndex(n => n.toLowerCase().includes(to.toLowerCase()));
+      const fromIdx = findStopIndex(route, from);
+      const toIdx = findStopIndex(route, to);
 
       if (fromIdx !== -1 && toIdx !== -1 && fromIdx < toIdx) {
-        // Found a route with both cities
         for (let i = fromIdx + 1; i < toIdx; i++) {
-          intermediates.add(stops[i]);
+          if (route.stops[i]?.name) {
+            intermediates.add(route.stops[i].name);
+          }
         }
       }
     }
