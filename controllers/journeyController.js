@@ -1,5 +1,7 @@
 // ==================== controllers/journeyController.js (ENHANCED) ====================
 const Route = require('../models/Route');
+const Bus = require('../models/Bus');
+const User = require('../models/User');
 const Segment = require('../models/Segment');
 const Journey = require('../models/Journey');
 
