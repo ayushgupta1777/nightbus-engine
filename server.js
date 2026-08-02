@@ -22,8 +22,8 @@ const io = socketIO(server, {
 // Middleware #87967
 app.use(helmet());
 app.use(cors());
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+app.use(express.json({ limit: '10mb', verify: (req, res, buf) => { req.rawBody = buf; } }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(mongoSanitize());
 app.use(morgan('combined'));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -127,8 +127,10 @@ app.use('/api/home-content', require('./routes/homeContentRoutes'));
 app.use('/share', require('./routes/shareRoutes'));
 
 // Test page (temporary)
-// Test page (temporary)
 app.get('/test-auth', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ success: false, message: 'Test auth page is disabled in production' });
+  }
   res.sendFile(__dirname + '/public/auth-test.html');
 });
 
@@ -203,6 +205,15 @@ process.on('SIGTERM', () => {
     console.log('Server closed');
     process.exit(0);
   });
+});
+
+// Global Unhandled Rejection & Exception Handlers to prevent silent process crashes
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('⚠️ [Unhandled Rejection] at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('⚠️ [Uncaught Exception] error:', error);
 });
 
 

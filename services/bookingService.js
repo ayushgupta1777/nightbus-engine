@@ -73,9 +73,12 @@ exports.finalizeBooking = async ({
                     if (coupon.maxDiscount) discountAmount = Math.min(discountAmount, coupon.maxDiscount);
                 }
                 
-                // Increment used count
-                coupon.usedCount += 1;
-                await coupon.save({ session });
+                // Increment used count atomically to prevent race condition under high concurrency
+                await Coupon.findOneAndUpdate(
+                    { _id: coupon._id },
+                    { $inc: { usedCount: 1 } },
+                    { session }
+                );
             }
         }
 
@@ -187,6 +190,24 @@ exports.finalizeBooking = async ({
             session.endSession();
         }
         console.error('[BOOKING SERVICE ERROR]', error);
+        if (paymentDetails?.razorpay_payment_id && paymentDetails.razorpay_order_id !== 'WALLET_PAYMENT') {
+            console.error(`🚨 [BOOKING FAILURE - COMPENSATING REFUND TRIGGERED] Payment ID: ${paymentDetails.razorpay_payment_id}. Error: ${error.message}`);
+            try {
+                const Razorpay = require('razorpay');
+                if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+                    const razorpay = new Razorpay({
+                        key_id: process.env.RAZORPAY_KEY_ID,
+                        key_secret: process.env.RAZORPAY_KEY_SECRET,
+                    });
+                    await razorpay.payments.refund(paymentDetails.razorpay_payment_id, {
+                        notes: { reason: `Booking failed: ${error.message}` }
+                    });
+                    console.log(`✅ Automatic compensating refund initiated for payment ${paymentDetails.razorpay_payment_id}`);
+                }
+            } catch (refundErr) {
+                console.error('❌ Failed to initiate automatic refund:', refundErr.message);
+            }
+        }
         throw error;
     }
 };

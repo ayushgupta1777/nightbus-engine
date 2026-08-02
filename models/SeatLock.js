@@ -40,8 +40,11 @@ const seatLockSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Compound unique index - one seat per bus per date
-seatLockSchema.index({ busId: 1, travelDate: 1, seatNumber: 1, status: 1 });
+// Compound unique index - only one active lock per seat per bus per date
+seatLockSchema.index(
+  { busId: 1, travelDate: 1, seatNumber: 1 },
+  { unique: true, partialFilterExpression: { status: 'locked' } }
+);
 seatLockSchema.index({ lockExpiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index
 
 module.exports = mongoose.model('SeatLock', seatLockSchema);

@@ -63,9 +63,10 @@ exports.handleWebhook = async (req, res) => {
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET; // Ensure you have this in .env if using webhooks
     const signature = req.headers['x-razorpay-signature'];
     
-    // Validate signature
+    // Validate signature using raw body buffer to guarantee byte-for-byte match with Razorpay
+    const payloadBuffer = req.rawBody || JSON.stringify(req.body);
     const expectedSignature = crypto.createHmac('sha256', secret)
-                                    .update(JSON.stringify(req.body))
+                                    .update(payloadBuffer)
                                     .digest('hex');
 
     if (expectedSignature !== signature) {
@@ -131,14 +132,19 @@ exports.verifyPayment = async (req, res) => {
              return res.status(400).json({ success: false, message: 'Invalid payment signature' });
         }
 
+        // Retrieve trusted server-side bookingData from PaymentOrder to prevent client tampering
+        const paymentOrder = await PaymentOrder.findOne({ razorpayOrderId: razorpay_order_id });
+        const trustedBookingData = paymentOrder?.bookingData || bookingData;
+
         // Finalize the booking idempotently
         const result = await bookingService.finalizeBooking({
             userId,
-            bookingData,
+            bookingData: trustedBookingData,
             paymentDetails: { 
                 razorpay_order_id: razorpay_order_id, 
                 razorpay_payment_id: razorpay_payment_id 
-            }
+            },
+            paymentOrder
         });
 
         res.json(result);

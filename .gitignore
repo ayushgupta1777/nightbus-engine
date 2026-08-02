@@ -139,3 +139,7 @@ dist
 config/firebase-service-account.json
 config/google-services.json
 config/*.json
+
+# Environment Variables & Secrets
+# .env
+# .env.*

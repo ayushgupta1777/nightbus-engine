@@ -194,6 +194,14 @@ exports.addMoney = async (req, res) => {
       });
     }
 
+    // In production mode, forbid direct unverified test/manual credits from client
+    if (process.env.NODE_ENV === 'production' && (paymentMethod === 'test' || source === 'manual')) {
+      return res.status(403).json({
+        success: false,
+        message: 'Direct unverified wallet credit is disabled in production'
+      });
+    }
+
     // Check idempotency
     if (idempotencyKey) {
       const existing = await WalletTransaction.findByIdempotencyKey(idempotencyKey);

@@ -5,6 +5,18 @@ const { sendNotification } = require('../utils/notifications');
 const emailService = require('../utils/emailService');
 const otpStore = {}; // Simple in-memory OTP store
 const emailOtpStore = {}; // In-memory store for email OTPs
+
+// Periodic cleanup of expired OTPs to prevent memory leaks in production
+setInterval(() => {
+  const now = Date.now();
+  for (const phone in otpStore) {
+    if (otpStore[phone]?.expiresAt <= now) delete otpStore[phone];
+  }
+  for (const email in emailOtpStore) {
+    if (emailOtpStore[email]?.expiresAt <= now) delete emailOtpStore[email];
+  }
+}, 10 * 60 * 1000).unref();
+
 const ServiceProvider = require('../models/ServiceProvider');
 
 // Generate JWT Token
@@ -131,7 +143,7 @@ exports.verifyOTP = async (req, res) => {
     let user = await User.findOne({ phone });
     if (!user) {
       // New user - use provided role or default to customer
-      const validRoles = ['customer', 'owner', 'staff', 'vendor', 'admin'];
+      const validRoles = ['customer', 'owner', 'vendor'];
       const userRole = validRoles.includes(role) ? role : 'customer';
 
       user = new User({
@@ -151,11 +163,11 @@ exports.verifyOTP = async (req, res) => {
       await user.save();
       console.log(`✅ New user created: ${user.name} (${user.role})`);
     } else {
-      // Existing user - update verification status and optional role
+      // Existing user - update verification status and optional safe role
       user.isVerified = true;
       if (name) user.name = name;
       if (email) user.email = email;
-      if (role && ['customer', 'owner', 'staff', 'vendor', 'admin'].includes(role)) {
+      if (role && ['customer', 'owner', 'vendor'].includes(role) && (!user.role || user.role === 'customer')) {
         user.role = role;
       }
       if (isServiceProvider !== undefined) user.isServiceProvider = isServiceProvider;
@@ -459,6 +471,9 @@ exports.logout = async (req, res) => {
 // TEMPORARY: Test Login (Bypass OTP for testing)
 // ⚠️ REMOVE IN PRODUCTION - This is for temporary testing only
 exports.testLogin = async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ success: false, message: 'Test login endpoint is disabled in production' });
+  }
   try {
     const { phone, role = 'customer' } = req.body;
 
@@ -467,7 +482,7 @@ exports.testLogin = async (req, res) => {
     }
 
     // Validate role
-    const validRoles = ['customer', 'owner', 'staff', 'vendor', 'admin', 'provider'];
+    const validRoles = ['customer', 'owner', 'staff', 'vendor', 'provider'];
     const resolvedRole = validRoles.includes(role) ? role : 'customer';
     const dbRole = resolvedRole === 'provider' ? 'customer' : resolvedRole;
 

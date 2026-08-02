@@ -22,10 +22,10 @@ exports.protect = async (req, res, next) => {
     req.userId = decoded.id;
     req.userRole = req.user?.role;
 
-    if (!req.user) {
+    if (!req.user || req.user.isActive === false) {
       return res.status(401).json({
         success: false,
-        message: 'User not found'
+        message: 'User not found or account deactivated'
       });
     }
 

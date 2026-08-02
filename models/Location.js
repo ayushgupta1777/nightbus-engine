@@ -8,6 +8,18 @@ const locationSchema = new mongoose.Schema({
         trim: true,
         index: true
     },
+    placeId: {
+        type: String,
+        index: true
+    },
+    displayName: {
+        type: String,
+        trim: true
+    },
+    city: {
+        type: String,
+        index: true
+    },
     state: {
         type: String,
         index: true
