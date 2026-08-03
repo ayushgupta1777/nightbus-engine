@@ -20,7 +20,7 @@ exports.searchLocations = async (req, res) => {
   try {
     const { query, limit = 10 } = req.query;
 
-    if (!query || query.length < 2) {
+    if (!query || query.trim().length < 1) {
       return res.json({ success: true, locations: [] });
     }
 
@@ -32,14 +32,8 @@ exports.searchLocations = async (req, res) => {
       type: { $in: ['stop', 'boarding_stop', 'drop_stop'] }
     }).select('name coordinates type').lean();
 
-    // 2. Local DB Search (Prefix, Contains, Text)
-    const baseFilter = {
-      isActive: true,
-      $or: [
-        { isGlobal: true },
-        ...(req.user ? [{ createdBy: req.user._id }] : [])
-      ]
-    };
+    // 2. Local DB Search (Prefix, Contains, Text) - search all active locations
+    const baseFilter = { isActive: true };
 
     let localResults = await Location.find({
       ...baseFilter,
@@ -79,6 +73,45 @@ exports.searchLocations = async (req, res) => {
         .limit(limit - localResults.length)
         .lean();
       localResults = [...localResults, ...textSearchLocal];
+    }
+
+    // 2.5 Live Route Stops Search (extract matching stops from active routes so customers always see bus route stops)
+    let routeStopResults = [];
+    try {
+      const matchingRoutes = await Route.find({
+        isActive: true,
+        $or: [
+          { 'stops.name': new RegExp(searchQuery, 'i') },
+          { 'stops.village': new RegExp(searchQuery, 'i') },
+          { 'stops.district': new RegExp(searchQuery, 'i') },
+          { 'stops.state': new RegExp(searchQuery, 'i') }
+        ]
+      }).select('routeName stops').lean();
+
+      const seenStopNames = new Set();
+      matchingRoutes.forEach(route => {
+        (route.stops || []).forEach(stop => {
+          const stopName = stop.name || stop.village;
+          if (stopName && new RegExp(searchQuery, 'i').test(stopName)) {
+            const lowerName = stopName.toLowerCase().trim();
+            if (!seenStopNames.has(lowerName)) {
+              seenStopNames.add(lowerName);
+              routeStopResults.push({
+                _id: stop._id || `routestop-${lowerName}`,
+                name: stopName,
+                state: stop.state || stop.district || 'India',
+                city: stop.village || stop.district || stopName,
+                type: 'stop',
+                isBusStop: true,
+                coordinates: stop.coordinates || null,
+                popularity: 1000
+              });
+            }
+          }
+        });
+      });
+    } catch (routeErr) {
+      console.warn('⚠️ Route stops search warning:', routeErr.message);
     }
 
     // 3. Google Places API External Search (Cached in MongoDB)
@@ -129,8 +162,8 @@ exports.searchLocations = async (req, res) => {
       console.warn('⚠️ Google Places API failed:', err.message);
     }
 
-    // 4. Merge results and map to nearest stop
-    const allCandidates = [...localResults, ...externalResults];
+    // 4. Merge results (prioritizing route stops and local results) and map to nearest stop
+    const allCandidates = [...routeStopResults, ...localResults, ...externalResults];
     const resultsMap = new Map();
 
     allCandidates.forEach(cand => {
