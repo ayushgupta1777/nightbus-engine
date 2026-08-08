@@ -12,6 +12,7 @@ router.get('/schedule/:routeId', routeController.getSchedule);
 // Protected routes - require owner role
 router.post('/', auth.verifyToken, auth.checkRole('owner'), routeController.createRoute);
 router.put('/:id', auth.verifyToken, auth.checkRole('owner'), routeController.updateRoute);
+router.put('/:id/status', auth.verifyToken, auth.checkRole('owner'), routeController.updateRouteStatus);
 router.delete('/:id', auth.verifyToken, auth.checkRole('owner'), routeController.deleteRoute);
 router.post('/:id/stops', auth.verifyToken, auth.checkRole('owner'), routeController.addStop);
 

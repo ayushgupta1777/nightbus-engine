@@ -539,7 +539,7 @@ exports.googleRoute = async (req, res) => {
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.description,routes.legs.distanceMeters,routes.legs.duration,routes.legs.startLocation,routes.legs.endLocation'
+        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.description,routes.legs.distanceMeters,routes.legs.duration,routes.legs.startLocation,routes.legs.endLocation,routes.legs.polyline.encodedPolyline'
       },
       body: JSON.stringify(requestBody)
     });
@@ -556,7 +556,8 @@ exports.googleRoute = async (req, res) => {
             distance: { value: distVal },
             duration: { value: durSec },
             start_address: '',
-            end_address: ''
+            end_address: '',
+            polyline: { points: leg.polyline?.encodedPolyline || '' }
           };
         });
 
@@ -575,7 +576,8 @@ exports.googleRoute = async (req, res) => {
           },
           legs: legs.length > 0 ? legs : [{
             distance: { value: route.distanceMeters || totalDist },
-            duration: { value: parseInt(String(route.duration || '0').replace('s', ''), 10) || totalDur }
+            duration: { value: parseInt(String(route.duration || '0').replace('s', ''), 10) || totalDur },
+            polyline: { points: polylinePoints }
           }],
           distanceMeters: route.distanceMeters || totalDist,
           durationSeconds: parseInt(String(route.duration || '0').replace('s', ''), 10) || totalDur

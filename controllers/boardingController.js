@@ -30,30 +30,49 @@ exports.scanQRAndBoard = async (req, res) => {
       });
     }
 
-    // Parse QR data
-    let qrInfo;
-    try {
-      qrInfo = typeof qrData === 'string' ? JSON.parse(qrData) : qrData;
-    } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid QR code format'
-      });
+    // Parse QR data (supports JSON string, object, or plain string ID)
+    let qrInfo = {};
+    if (typeof qrData === 'string') {
+      if (qrData.trim().startsWith('{')) {
+        try {
+          qrInfo = JSON.parse(qrData);
+        } catch (error) {
+          qrInfo = { segmentId: qrData };
+        }
+      } else {
+        qrInfo = { segmentId: qrData };
+      }
+    } else if (typeof qrData === 'object' && qrData !== null) {
+      qrInfo = qrData;
     }
 
-    const { segmentId, journeyId, seatNumber, from, to, date } = qrInfo;
+    const targetSegmentId = qrInfo.segmentId || qrInfo.journeyId || qrInfo.bookingId || qrData;
 
-    if (!segmentId || !journeyId) {
+    if (!targetSegmentId) {
       return res.status(400).json({
         success: false,
         message: 'Invalid QR code data'
       });
     }
 
-    // Get segment
-    const segment = await Segment.findById(segmentId)
-      .populate('busId routeId')
-      .populate('journeyId');
+    // Get segment (by ObjectId or fallback short code)
+    let segment = null;
+    if (mongoose.Types.ObjectId.isValid(targetSegmentId)) {
+      segment = await Segment.findById(targetSegmentId)
+        .populate('busId routeId')
+        .populate('journeyId');
+    }
+    if (!segment) {
+      const cleanId = String(targetSegmentId).replace(/^(BK|YTR|#)/i, '').trim().toLowerCase();
+      if (cleanId.length === 6) {
+        segment = await Segment.findOne({
+          $or: [
+            { $expr: { $eq: [{ $toLower: { $substrCP: [{ $toString: "$_id" }, 18, 6] } }, cleanId] } },
+            { $expr: { $eq: [{ $toLower: { $substrCP: [{ $toString: "$journeyId" }, 18, 6] } }, cleanId] } }
+          ]
+        }).populate('busId routeId').populate('journeyId');
+      }
+    }
 
     if (!segment) {
       return res.status(404).json({

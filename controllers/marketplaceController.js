@@ -223,9 +223,10 @@ exports.toggleProviderStatus = async (req, res) => {
 // --- UPDATE PROVIDER PROFILE ---
 exports.updateProviderProfile = async (req, res) => {
   try {
-    const { businessName, description, location, pricing, availability, licenseNumber, fitnessNumber, insurancePolicyNumber } = req.body;
+    const { serviceType, businessName, description, location, pricing, availability, licenseNumber, fitnessNumber, insurancePolicyNumber } = req.body;
     
     const update = {};
+    if (serviceType) update.serviceType = serviceType;
     if (businessName) update.businessName = businessName;
     if (description) update.description = description;
     if (location) update.location = location;
@@ -241,7 +242,7 @@ exports.updateProviderProfile = async (req, res) => {
       const user = await User.findById(req.user.id);
       provider = new ServiceProvider({
         userId: req.user.id,
-        serviceType: user?.serviceType || 'Other',
+        serviceType: serviceType || user?.serviceType || 'Other',
         ...update
       });
       await provider.save();
@@ -249,14 +250,18 @@ exports.updateProviderProfile = async (req, res) => {
       provider = await ServiceProvider.findOneAndUpdate(
         { userId: req.user.id },
         update,
-        { new: true }
+        { new: true, runValidators: true }
       );
     }
     
+    if (serviceType) {
+      await User.findByIdAndUpdate(req.user.id, { serviceType });
+    }
+
     res.json({ success: true, data: provider });
   } catch (error) {
     console.error('Error updating profile:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
 

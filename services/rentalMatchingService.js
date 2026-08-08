@@ -5,6 +5,13 @@ const RentalService = require('../models/RentalService');
 const Location = require('../models/Location');
 const { sendNotification } = require('../utils/notifications');
 const { getEquivalentVehicleTypes } = require('../utils/vehicleTypeMapper');
+const { 
+  getMatchingConfig, 
+  getCapacityBounds, 
+  getPriceBounds, 
+  isPriceOverlapping, 
+  isCapacityCompatible 
+} = require('../utils/matchingHelpers');
 
 /**
  * Calculate distance between two points in km (Haversine formula)
@@ -60,11 +67,17 @@ exports.matchRequestToOwners = async (requestId) => {
     const fromLoc = await resolveLocationFromAddress(request.from, allLocations);
     const toLoc = await resolveLocationFromAddress(request.to, allLocations);
 
-    // 2. Query configurations (exact name match first, then proximity)
+    // 2. Flexible capacity and price bounds calculation
+    const { minCap, maxCap } = getCapacityBounds(request.peopleCount);
+    const { minTol: budgetMinTol, maxTol: budgetMaxTol } = getPriceBounds(request.budgetMin, request.budgetMax);
+
+    // Query configurations (using flexible capacity range & price range overlap)
     const configs = await OwnerRouteConfig.find({
       isActive: true,
       vehicleType: { $in: getEquivalentVehicleTypes(request.vehicleType) },
-      capacity: { $gte: request.peopleCount }
+      capacity: { $gte: minCap, $lte: maxCap },
+      priceMin: { $lte: budgetMaxTol },
+      priceMax: { $gte: budgetMinTol }
     }).populate('ownerId', 'name fcmToken fcmTokens');
 
     // 2b. Get owners who are AVAILABLE on this specific date (ignoring time component)
@@ -220,10 +233,18 @@ exports.matchAvailabilityToRequests = async (serviceId) => {
       return { date: { $gte: start, $lte: end } };
     });
 
+    const { minFillRatio, minCapacityRatio, priceTolerancePct } = getMatchingConfig();
+    const minReqPeople = Math.max(1, Math.ceil(cfg.capacity * minFillRatio));
+    const maxReqPeople = Math.floor(cfg.capacity / minCapacityRatio);
+    const budgetMinTol = Math.max(0, Math.round(cfg.priceMin * (1 - priceTolerancePct)));
+    const budgetMaxTol = Math.round(cfg.priceMax * (1 + priceTolerancePct));
+
     const query = {
       status: 'open',
       vehicleType: { $in: getEquivalentVehicleTypes(cfg.vehicleType) },
-      peopleCount: { $lte: cfg.capacity }
+      peopleCount: { $gte: minReqPeople, $lte: maxReqPeople },
+      budgetMin: { $lte: budgetMaxTol },
+      budgetMax: { $gte: budgetMinTol }
     };
 
     if (dateConditions.length > 0) {
@@ -252,10 +273,18 @@ exports.matchServiceToRequests = async (configId) => {
     const cfg = await OwnerRouteConfig.findById(configId);
     if (!cfg) return;
 
+    const { minFillRatio, minCapacityRatio, priceTolerancePct } = getMatchingConfig();
+    const minReqPeople = Math.max(1, Math.ceil(cfg.capacity * minFillRatio));
+    const maxReqPeople = Math.floor(cfg.capacity / minCapacityRatio);
+    const budgetMinTol = Math.max(0, Math.round(cfg.priceMin * (1 - priceTolerancePct)));
+    const budgetMaxTol = Math.round(cfg.priceMax * (1 + priceTolerancePct));
+
     const requests = await RentalRequest.find({
       status: 'open',
       vehicleType: { $in: getEquivalentVehicleTypes(cfg.vehicleType) },
-      peopleCount: { $lte: cfg.capacity }
+      peopleCount: { $gte: minReqPeople, $lte: maxReqPeople },
+      budgetMin: { $lte: budgetMaxTol },
+      budgetMax: { $gte: budgetMinTol }
     });
 
     for (const req of requests) {

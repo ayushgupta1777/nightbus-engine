@@ -365,22 +365,22 @@ segmentSchema.methods.generateBoardingOTP = async function (allowSave = true) {
 // Verify boarding OTP
 segmentSchema.methods.verifyBoardingOTP = function (otp) {
   if (!this.boardingOTP || !this.boardingOTP.code) {
-    return { success: false, message: 'No OTP generated' };
+    return { success: false, verified: false, reason: 'No OTP generated', message: 'No OTP generated' };
   }
 
   if (this.boardingOTP.isUsed) {
-    return { success: false, message: 'OTP already used' };
+    return { success: false, verified: false, reason: 'OTP already used', message: 'OTP already used' };
   }
 
   if (new Date() > new Date(this.boardingOTP.expiresAt)) {
-    return { success: false, message: 'OTP expired' };
+    return { success: false, verified: false, reason: 'OTP expired', message: 'OTP expired' };
   }
 
-  if (this.boardingOTP.code !== otp.toString()) {
-    return { success: false, message: 'Invalid OTP' };
+  if (this.boardingOTP.code !== otp.toString().trim()) {
+    return { success: false, verified: false, reason: 'Invalid OTP', message: 'Invalid OTP' };
   }
 
-  return { success: true };
+  return { success: true, verified: true, message: 'OTP verified successfully' };
 };
 
 // Mark as boarded
@@ -455,21 +455,21 @@ segmentSchema.methods.generateExitOTP = async function (sendViaSMS = false) {
 };
 
 // Verify exit OTP and mark completed
-segmentSchema.methods.verifyExitOTP = async function (otp, staffData) {
+segmentSchema.methods.verifyExitOTP = async function (otp, staffData = {}) {
   if (!this.exitOTP || !this.exitOTP.code) {
-    return { success: false, message: 'No exit OTP generated' };
+    return { success: false, verified: false, reason: 'No exit OTP generated', message: 'No exit OTP generated' };
   }
 
   if (this.exitOTP.isUsed) {
-    return { success: false, message: 'OTP already used' };
+    return { success: false, verified: false, reason: 'OTP already used', message: 'OTP already used' };
   }
 
   if (new Date() > new Date(this.exitOTP.expiresAt)) {
-    return { success: false, message: 'OTP expired. Please generate a new one.' };
+    return { success: false, verified: false, reason: 'OTP expired. Please generate a new one.', message: 'OTP expired. Please generate a new one.' };
   }
 
-  if (this.exitOTP.code !== otp.toString()) {
-    return { success: false, message: 'Invalid OTP' };
+  if (this.exitOTP.code !== otp.toString().trim()) {
+    return { success: false, verified: false, reason: 'Invalid OTP', message: 'Invalid OTP' };
   }
 
   // Mark as completed
@@ -478,13 +478,15 @@ segmentSchema.methods.verifyExitOTP = async function (otp, staffData) {
   this.exitOTP.isUsed = true;
   this.exitOTP.usedAt = new Date();
 
-  this.exitVerifiedBy = {
-    staffId: staffData.staffId,
-    staffName: staffData.staffName,
-    method: 'otp'
-  };
+  if (staffData && staffData.staffId) {
+    this.exitVerifiedBy = {
+      staffId: staffData.staffId,
+      staffName: staffData.staffName || 'Staff',
+      method: 'otp'
+    };
+  }
 
-  if (staffData.location) {
+  if (staffData && staffData.location) {
     this.exitLocation = {
       type: 'Point',
       coordinates: [staffData.location.longitude, staffData.location.latitude]
@@ -498,7 +500,7 @@ segmentSchema.methods.verifyExitOTP = async function (otp, staffData) {
 
   await this.save();
 
-  return { success: true, message: 'Journey completed successfully' };
+  return { success: true, verified: true, message: 'Journey completed successfully' };
 };
 
 // Check if can be boarded
@@ -510,9 +512,17 @@ segmentSchema.methods.canBeBoarded = function () {
   const now = new Date();
   const travelDate = new Date(this.travelDate);
 
-  // Check if travel date is today
-  if (travelDate.toDateString() !== now.toDateString()) {
-    return { allowed: false, reason: 'Boarding only allowed on travel date' };
+  // Travel date check: flexible timezone check
+  const nowFormatted = now.toISOString().split('T')[0];
+  const travelFormatted = travelDate.toISOString().split('T')[0];
+  const nowLocal = now.toDateString();
+  const travelLocal = travelDate.toDateString();
+
+  if (nowFormatted !== travelFormatted && nowLocal !== travelLocal) {
+    const timeDiffMs = Math.abs(now.getTime() - travelDate.getTime());
+    if (timeDiffMs > 36 * 60 * 60 * 1000) {
+      return { allowed: false, reason: 'Boarding only allowed on travel date' };
+    }
   }
 
   if (this.boardedAt) {

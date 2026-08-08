@@ -63,12 +63,70 @@ exports.createRoute = async (req, res) => {
 // Update route
 exports.updateRoute = async (req, res) => {
   try {
-    const route = await Route.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const targetId = req.params.id || req.params.routeId;
+    const updates = { ...req.body };
+
+    if (typeof updates.isActive === 'boolean') {
+      updates.status = updates.isActive ? 'active' : 'inactive';
+    }
+
+    const existingRoute = await Route.findById(targetId);
+    if (!existingRoute) {
+      return res.status(404).json({ success: false, message: 'Route not found' });
+    }
+
+    if (updates.departureTime && existingRoute.stops && existingRoute.stops.length > 0) {
+      const updatedStops = existingRoute.stops.map((s, idx) => {
+        const stopObj = s.toObject ? s.toObject() : { ...s };
+        if (idx === 0) {
+          stopObj.departureTime = updates.departureTime;
+        }
+        return stopObj;
+      });
+      updates.stops = updatedStops;
+    }
+
+    const route = await Route.findByIdAndUpdate(targetId, updates, { new: true, runValidators: true });
+
+    res.status(200).json({
+      success: true,
+      message: 'Route updated successfully',
+      data: { route },
+      route
+    });
+  } catch (error) {
+    console.error('Update route error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Update route status
+exports.updateRouteStatus = async (req, res) => {
+  try {
+    const targetId = req.params.id || req.params.routeId;
+    const { isActive, status } = req.body;
+
+    const newIsActive = typeof isActive === 'boolean' ? isActive : (status === 'active');
+    const newStatus = status || (newIsActive ? 'active' : 'inactive');
+
+    const route = await Route.findByIdAndUpdate(
+      targetId,
+      { isActive: newIsActive, status: newStatus },
+      { new: true }
+    );
+
     if (!route) {
       return res.status(404).json({ success: false, message: 'Route not found' });
     }
-    res.status(200).json({ success: true, message: 'Route updated', route });
+
+    res.status(200).json({
+      success: true,
+      message: `Route status updated to ${newStatus}`,
+      data: { route },
+      route
+    });
   } catch (error) {
+    console.error('Update route status error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

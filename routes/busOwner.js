@@ -35,6 +35,7 @@ router.post('/routes', busOwnerController.createRoute);
 router.get('/routes', busOwnerController.getOwnerRoutes);
 router.get('/routes/:routeId/details', busOwnerController.getRouteDetails);
 router.put('/routes/:routeId', busOwnerController.updateRoute);
+router.put('/routes/:routeId/status', busOwnerController.updateRouteStatus);
 router.put('/routes/:routeId/stops', busOwnerController.updateRouteStops);
 router.delete('/routes/:routeId', busOwnerController.deleteRoute);
 

@@ -7,6 +7,7 @@ const User = require('../models/User');
 const Location = require('../models/Location');
 const matchingService = require('../services/rentalMatchingService');
 const { getEquivalentVehicleTypes } = require('../utils/vehicleTypeMapper');
+const { getMatchingConfig, getCapacityBounds, getPriceBounds } = require('../utils/matchingHelpers');
 
 // --- OWNER ROUTE CONFIG (CAPABILITY LAYER) ---
 
@@ -252,14 +253,23 @@ exports.getMatchingRequestsForOwner = async (req, res) => {
       return { date: { $gte: start, $lte: end } };
     });
 
-    // 3. Build compound match query
-    const orConditions = configs.map(cfg => ({
-      from: new RegExp(cfg.from, 'i'),
-      to: new RegExp(cfg.to, 'i'),
-      vehicleType: { $in: getEquivalentVehicleTypes(cfg.vehicleType) },
-      budgetMax: { $gte: cfg.priceMin },
-      budgetMin: { $lte: cfg.priceMax }
-    }));
+    // 3. Build compound match query using flexible capacity and price bounds
+    const { minFillRatio, minCapacityRatio, priceTolerancePct } = getMatchingConfig();
+    const orConditions = configs.map(cfg => {
+      const minReqPeople = Math.max(1, Math.ceil(cfg.capacity * minFillRatio));
+      const maxReqPeople = Math.floor(cfg.capacity / minCapacityRatio);
+      const budgetMinTol = Math.max(0, Math.round(cfg.priceMin * (1 - priceTolerancePct)));
+      const budgetMaxTol = Math.round(cfg.priceMax * (1 + priceTolerancePct));
+
+      return {
+        from: new RegExp(cfg.from, 'i'),
+        to: new RegExp(cfg.to, 'i'),
+        vehicleType: { $in: getEquivalentVehicleTypes(cfg.vehicleType) },
+        peopleCount: { $gte: minReqPeople, $lte: maxReqPeople },
+        budgetMax: { $gte: budgetMinTol },
+        budgetMin: { $lte: budgetMaxTol }
+      };
+    });
 
     const query = {
       status: 'open',
@@ -334,6 +344,10 @@ exports.getMatchingOwnersForCustomer = async (req, res) => {
     }
     if (bestToMatch) toCity = bestToMatch.name;
 
+    // Calculate capacity bounds and price bounds with tolerance
+    const { minCap, maxCap } = getCapacityBounds(request.peopleCount);
+    const { minTol: budgetMinTol, maxTol: budgetMaxTol } = getPriceBounds(request.budgetMin, request.budgetMax);
+
     const availability = await RentalService.find({
       availableDates: { $elemMatch: { $gte: startOfDay, $lte: endOfDay } }
     }).populate({
@@ -354,8 +368,9 @@ exports.getMatchingOwnersForCustomer = async (req, res) => {
           }
         ],
         vehicleType: { $in: getEquivalentVehicleTypes(request.vehicleType) },
-        priceMin: { $lte: request.budgetMax },
-        priceMax: { $gte: request.budgetMin }
+        capacity: { $gte: minCap, $lte: maxCap },
+        priceMin: { $lte: budgetMaxTol },
+        priceMax: { $gte: budgetMinTol }
       }
     }).populate('ownerId', 'name profilePicture companyName isVerified');
 

@@ -5,22 +5,39 @@ const TripTimeline = require('../models/TripTimeline');
 const Segment = require('../models/Segment');
 const Bus = require('../models/Bus');
 
-const resolveSegment = async (segmentId) => {
-  if (!segmentId) return null;
+const resolveSegment = async (segmentIdInput) => {
+  if (!segmentIdInput) return null;
   
-  if (mongoose.Types.ObjectId.isValid(segmentId)) {
-    return await Segment.findById(segmentId);
+  let targetId = segmentIdInput;
+
+  // 1. Parse JSON string if scanned from QR Code
+  if (typeof segmentIdInput === 'string' && segmentIdInput.trim().startsWith('{')) {
+    try {
+      const parsed = JSON.parse(segmentIdInput);
+      targetId = parsed.segmentId || parsed.journeyId || parsed.bookingId || segmentIdInput;
+    } catch (e) {}
+  } else if (typeof segmentIdInput === 'object' && segmentIdInput !== null) {
+    targetId = segmentIdInput.segmentId || segmentIdInput.journeyId || segmentIdInput.bookingId;
   }
-  
-  // Clean query (e.g. BKABC123 -> abc123)
-  const cleanId = segmentId.replace(/^(BK|YTR|#)/i, '').trim().toLowerCase();
+
+  if (!targetId) return null;
+  targetId = String(targetId).trim();
+
+  // 2. Direct ObjectId lookup for Segment _id
+  if (mongoose.Types.ObjectId.isValid(targetId)) {
+    const seg = await Segment.findById(targetId);
+    if (seg) return seg;
+  }
+
+  // 3. Short ID / PNR 6-character substring matching
+  const cleanId = targetId.replace(/^(BK|YTR|#)/i, '').trim().toLowerCase();
   if (cleanId.length === 6) {
-    return await Segment.findOne({
+    const seg = await Segment.findOne({
       $or: [
         {
           $expr: {
             $eq: [
-              { $substrCP: [ { $toString: "$_id" }, 18, 6 ] },
+              { $toLower: { $substrCP: [ { $toString: "$_id" }, 18, 6 ] } },
               cleanId
             ]
           }
@@ -28,14 +45,22 @@ const resolveSegment = async (segmentId) => {
         {
           $expr: {
             $eq: [
-              { $substrCP: [ { $toString: "$journeyId" }, 18, 6 ] },
+              { $toLower: { $substrCP: [ { $toString: "$journeyId" }, 18, 6 ] } },
               cleanId
             ]
           }
         }
       ]
     });
+    if (seg) return seg;
   }
+
+  // 4. Fallback lookup by journeyId if targetId is an ObjectId
+  if (mongoose.Types.ObjectId.isValid(targetId)) {
+    const segByJourney = await Segment.findOne({ journeyId: targetId });
+    if (segByJourney) return segByJourney;
+  }
+
   return null;
 };
 

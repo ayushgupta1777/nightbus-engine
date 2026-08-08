@@ -104,6 +104,14 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Bus'
   },
+  currentAssignment: {
+    busId: { type: mongoose.Schema.Types.ObjectId, ref: 'Bus' },
+    role: String,
+    shiftDate: String,
+    shiftStartTime: String,
+    shiftEndTime: String,
+    assignedAt: Date
+  },
   salary: {
     type: Number,
     default: 0

@@ -447,13 +447,65 @@ exports.getOwnerRoutes = async (req, res) => {
 
 exports.updateRoute = async (req, res) => {
   try {
-    const { routeId } = req.params;
+    const { routeId, id } = req.params;
+    const targetId = routeId || id;
     const ownerId = req.userId;
-    const updates = req.body;
+    const updates = { ...req.body };
+
+    if (typeof updates.isActive === 'boolean') {
+      updates.status = updates.isActive ? 'active' : 'inactive';
+    }
+
+    const existingRoute = await Route.findOne({ _id: targetId, ownerId });
+    if (!existingRoute) {
+      return res.status(404).json({
+        success: false,
+        message: 'Route not found'
+      });
+    }
+
+    if (updates.departureTime && existingRoute.stops && existingRoute.stops.length > 0) {
+      const updatedStops = existingRoute.stops.map((s, idx) => {
+        const stopObj = s.toObject ? s.toObject() : { ...s };
+        if (idx === 0) {
+          stopObj.departureTime = updates.departureTime;
+        }
+        return stopObj;
+      });
+      updates.stops = updatedStops;
+    }
 
     const route = await Route.findOneAndUpdate(
-      { _id: routeId, ownerId },
+      { _id: targetId, ownerId },
       updates,
+      { new: true, runValidators: true }
+    );
+
+    res.json({
+      success: true,
+      message: 'Route updated successfully',
+      data: { route },
+      route
+    });
+  } catch (error) {
+    console.error('❌ Update route error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateRouteStatus = async (req, res) => {
+  try {
+    const { routeId, id } = req.params;
+    const targetId = routeId || id;
+    const ownerId = req.userId;
+    const { isActive, status } = req.body;
+
+    const newIsActive = typeof isActive === 'boolean' ? isActive : (status === 'active');
+    const newStatus = status || (newIsActive ? 'active' : 'inactive');
+
+    const route = await Route.findOneAndUpdate(
+      { _id: targetId, ownerId },
+      { isActive: newIsActive, status: newStatus },
       { new: true }
     );
 
@@ -466,11 +518,12 @@ exports.updateRoute = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Route updated successfully',
-      data: { route }
+      message: `Route status updated to ${newStatus}`,
+      data: { route },
+      route
     });
   } catch (error) {
-    console.error('❌ Update route error:', error);
+    console.error('❌ Update route status error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -1289,6 +1342,107 @@ exports.getBusBookingsByDate = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Get bus bookings by date error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ==================== STAFF MANAGEMENT ====================
+exports.assignStaff = async (req, res) => {
+  try {
+    const ownerId = req.userId;
+    const { staffId, busId, role, shiftDate, shiftStartTime, shiftEndTime } = req.body;
+
+    if (!staffId || !busId) {
+      return res.status(400).json({ success: false, message: 'staffId and busId are required' });
+    }
+
+    const User = require('../models/User');
+    const staffMember = await User.findById(staffId);
+    if (!staffMember) {
+      return res.status(404).json({ success: false, message: 'Staff member not found' });
+    }
+
+    staffMember.assignedBus = busId;
+    staffMember.staffRole = role || staffMember.staffRole || 'conductor';
+    staffMember.currentAssignment = {
+      busId,
+      role: role || staffMember.staffRole || 'conductor',
+      shiftDate: shiftDate || new Date().toISOString().split('T')[0],
+      shiftStartTime: shiftStartTime || '06:00',
+      shiftEndTime: shiftEndTime || '18:00',
+      assignedAt: new Date()
+    };
+
+    await staffMember.save();
+
+    res.json({
+      success: true,
+      message: 'Staff assigned successfully',
+      data: { staff: staffMember }
+    });
+  } catch (error) {
+    console.error('❌ assignStaff error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getOwnerStaff = async (req, res) => {
+  try {
+    const ownerId = req.userId;
+    const User = require('../models/User');
+    const staff = await User.find({
+      $or: [
+        { role: 'staff' },
+        { createdByOwnerId: ownerId }
+      ]
+    });
+    res.json({ success: true, data: { staff } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.createStaff = async (req, res) => {
+  try {
+    const ownerId = req.userId;
+    const User = require('../models/User');
+    const staffMember = new User({ ...req.body, createdByOwnerId: ownerId, role: 'staff' });
+    await staffMember.save();
+    res.status(201).json({ success: true, data: { staff: staffMember } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateStaff = async (req, res) => {
+  try {
+    const { staffId } = req.params;
+    const User = require('../models/User');
+    const staffMember = await User.findByIdAndUpdate(staffId, req.body, { new: true });
+    res.json({ success: true, data: { staff: staffMember } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getStaffAssignments = async (req, res) => {
+  try {
+    const { staffId } = req.params;
+    const User = require('../models/User');
+    const staffMember = await User.findById(staffId);
+    res.json({ success: true, data: { assignments: staffMember?.currentAssignment ? [staffMember.currentAssignment] : [] } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateStaffStatus = async (req, res) => {
+  try {
+    const { staffId } = req.params;
+    const User = require('../models/User');
+    const staffMember = await User.findByIdAndUpdate(staffId, req.body, { new: true });
+    res.json({ success: true, data: { staff: staffMember } });
+  } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };

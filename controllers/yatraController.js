@@ -260,7 +260,7 @@ exports.getPackageDetails = async (req, res) => {
  */
 exports.bookPackage = async (req, res) => {
   try {
-    const customerId = req.user.id;
+    const customerId = req.user._id || req.user.id || req.userId;
     const { packageId, passengers, mealPreference, specialRequests, paymentMethod } = req.body;
 
     if (!packageId || !passengers || passengers.length === 0) {
@@ -349,17 +349,87 @@ exports.bookPackage = async (req, res) => {
 
 /**
  * GET /yatra/my-bookings
- * Customer's own Yatra bookings
+ * Customer's own Yatra bookings & tickets
  */
 exports.getMyBookings = async (req, res) => {
   try {
-    const customerId = req.user.id;
-    const bookings = await YatraBooking.find({ customerId })
+    const rawUserId = req.user?._id || req.user?.id || req.userId;
+    const Journey = require('../models/Journey');
+
+    // 1. Fetch YatraPackage bookings
+    const yatraBookings = await YatraBooking.find({
+      $or: [
+        { customerId: rawUserId },
+        { customerId: req.userId },
+        { customerId: req.user?._id }
+      ].filter(Boolean)
+    })
       .populate('packageId', 'title startDate endDate departurePoint category pricePerPerson status images')
       .sort({ createdAt: -1 });
 
-    res.json({ success: true, data: bookings });
+    // 2. Fetch Journey Yatra tickets (where isYatra === true or bookingType === 'yatra')
+    let journeyYatras = [];
+    try {
+      journeyYatras = await Journey.find({
+        $or: [
+          { customerId: rawUserId },
+          { customerId: req.userId },
+          { customerId: req.user?._id }
+        ].filter(Boolean),
+        $or: [
+          { isYatra: true },
+          { bookingType: 'yatra' }
+        ]
+      })
+        .populate({
+          path: 'segments',
+          populate: { path: 'busId routeId' }
+        })
+        .sort({ createdAt: -1 });
+    } catch (jErr) {
+      console.warn('⚠️ Could not query Journey Yatra tickets:', jErr.message);
+    }
+
+    // Format Journey Yatra tickets to align with YatraBooking interface
+    const formattedJourneyYatras = (journeyYatras || []).map(j => {
+      const seg = j.segments?.[0] || {};
+      return {
+        _id: j._id,
+        isJourneyTicket: true,
+        customerId: j.customerId,
+        status: j.status,
+        totalAmount: j.totalAmount,
+        seatsBooked: seg.seatNumber ? 1 : 1,
+        boardingOtp: seg.boardingOTP?.code,
+        packageId: {
+          title: seg.routeId?.routeName || 'Yatra Ticket Journey',
+          startDate: seg.travelDate || j.createdAt,
+          endDate: seg.travelDate || j.createdAt,
+          departurePoint: { city: seg.fromStop?.name || 'Origin' },
+          category: 'Yatra Ticket',
+          status: j.status
+        },
+        createdAt: j.createdAt,
+        updatedAt: j.updatedAt
+      };
+    });
+
+    // Merge both arrays (prevent duplicates by _id)
+    const combinedMap = new Map();
+    yatraBookings.forEach(b => combinedMap.set(b._id.toString(), b));
+    formattedJourneyYatras.forEach(b => {
+      if (!combinedMap.has(b._id.toString())) {
+        combinedMap.set(b._id.toString(), b);
+      }
+    });
+
+    const combinedList = Array.from(combinedMap.values()).sort(
+      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    );
+
+    res.json({ success: true, data: combinedList });
   } catch (error) {
+    console.error('❌ getMyBookings error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

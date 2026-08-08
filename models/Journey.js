@@ -72,6 +72,17 @@ const journeySchema = new mongoose.Schema({
     type: String,
     enum: ['app', 'web', 'api'],
     default: 'app'
+  },
+  // Booking Type & Metadata
+  bookingType: {
+    type: String,
+    enum: ['bus', 'yatra', 'rental', 'event'],
+    default: 'bus'
+  },
+  isYatra: {
+    type: Boolean,
+    default: false,
+    index: true
   }
 }, { 
   timestamps: true 

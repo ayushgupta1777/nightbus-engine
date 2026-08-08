@@ -44,7 +44,16 @@ const stopSchema = new mongoose.Schema({
   geofenceRadius: {
     type: Number,
     default: 200 // meters
-  }
+  },
+  distanceFromPrevious: {
+    type: Number,
+    default: 0
+  },
+  cumDistance: {
+    type: Number,
+    default: 0
+  },
+  manualDistance: Number
 }, { _id: false });
 
 const routeSchema = new mongoose.Schema({
