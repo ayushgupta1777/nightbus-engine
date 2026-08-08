@@ -7,7 +7,8 @@ const User = require('../models/User');
 const Location = require('../models/Location');
 const matchingService = require('../services/rentalMatchingService');
 const { getEquivalentVehicleTypes } = require('../utils/vehicleTypeMapper');
-const { getMatchingConfig, getCapacityBounds, getPriceBounds } = require('../utils/matchingHelpers');
+const { getMatchingConfig, getCapacityBounds, getPriceBounds, evaluateRentalMatch } = require('../utils/matchingHelpers');
+const { sendNotification } = require('../utils/notifications');
 
 // --- OWNER ROUTE CONFIG (CAPABILITY LAYER) ---
 
@@ -324,8 +325,22 @@ exports.getMatchingOwnersForCustomer = async (req, res) => {
     
     let bestFromMatch = null;
     for (const loc of allLocations) {
+      let matches = false;
       const escapedName = loc.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       if (new RegExp(`\\b${escapedName}\\b`, 'i').test(request.from)) {
+        matches = true;
+      } else if (loc.aliases && loc.aliases.length > 0) {
+        for (const alias of loc.aliases) {
+          if (!alias) continue;
+          const escapedAlias = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          if (new RegExp(`\\b${escapedAlias}\\b`, 'i').test(request.from)) {
+            matches = true;
+            break;
+          }
+        }
+      }
+      
+      if (matches) {
         if (!bestFromMatch || loc.name.length > bestFromMatch.name.length) {
           bestFromMatch = loc;
         }
@@ -335,8 +350,22 @@ exports.getMatchingOwnersForCustomer = async (req, res) => {
 
     let bestToMatch = null;
     for (const loc of allLocations) {
+      let matches = false;
       const escapedName = loc.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       if (new RegExp(`\\b${escapedName}\\b`, 'i').test(request.to)) {
+        matches = true;
+      } else if (loc.aliases && loc.aliases.length > 0) {
+        for (const alias of loc.aliases) {
+          if (!alias) continue;
+          const escapedAlias = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          if (new RegExp(`\\b${escapedAlias}\\b`, 'i').test(request.to)) {
+            matches = true;
+            break;
+          }
+        }
+      }
+
+      if (matches) {
         if (!bestToMatch || loc.name.length > bestToMatch.name.length) {
           bestToMatch = loc;
         }
@@ -344,38 +373,33 @@ exports.getMatchingOwnersForCustomer = async (req, res) => {
     }
     if (bestToMatch) toCity = bestToMatch.name;
 
-    // Calculate capacity bounds and price bounds with tolerance
-    const { minCap, maxCap } = getCapacityBounds(request.peopleCount);
-    const { minTol: budgetMinTol, maxTol: budgetMaxTol } = getPriceBounds(request.budgetMin, request.budgetMax);
-
+    // Calculate capacity bounds and price bounds with tolerance for initial loose filter (optional, but let's just get all available for accurate debugging)
     const availability = await RentalService.find({
       availableDates: { $elemMatch: { $gte: startOfDay, $lte: endOfDay } }
-    }).populate({
-      path: 'routeConfigId',
-      match: {
-        $and: [
-          {
-            $or: [
-              { from: new RegExp(request.from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
-              { from: new RegExp(`^${fromCity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
-            ]
-          },
-          {
-            $or: [
-              { to: new RegExp(request.to.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
-              { to: new RegExp(`^${toCity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
-            ]
-          }
-        ],
-        vehicleType: { $in: getEquivalentVehicleTypes(request.vehicleType) },
-        capacity: { $gte: minCap, $lte: maxCap },
-        priceMin: { $lte: budgetMaxTol },
-        priceMax: { $gte: budgetMinTol }
-      }
-    }).populate('ownerId', 'name profilePicture companyName isVerified');
+    }).populate('routeConfigId').populate('ownerId', 'name profilePicture companyName isVerified');
 
-    // Filter out services where routeConfig didn't match (due to population match filtering)
-    let filtered = availability.filter(a => a.routeConfigId != null);
+    let filtered = [];
+    let evaluations = [];
+
+    // Evaluate each available service in memory for precise debugging
+    for (const a of availability) {
+      if (a.routeConfigId) {
+        // Run full evaluation
+        const evalResult = evaluateRentalMatch(a.routeConfigId, request, fromCity, toCity, a.availableDates);
+        
+        evaluations.push({
+          ownerId: a.ownerId ? (a.ownerId._id || a.ownerId) : null,
+          isMatch: evalResult.isMatch,
+          reasons: evalResult.reasons
+        });
+
+        if (evalResult.isMatch) {
+          filtered.push(a);
+        } else {
+          console.log(`[Rental Match Reject] Req ${requestId} vs Owner ${a.ownerId?.name}: ${evalResult.reasons.join(' | ')}`);
+        }
+      }
+    }
 
     // 2. Score and Sort
     // Closeness score = 1 / (1 + price difference)
@@ -395,7 +419,7 @@ exports.getMatchingOwnersForCustomer = async (req, res) => {
       processed.sort((a, b) => a.priceCloseness - b.priceCloseness);
     }
 
-    res.status(200).json({ success: true, data: processed });
+    res.status(200).json({ success: true, data: processed, evaluations });
   } catch (error) {
     console.error('Error fetching matching owners:', error);
     res.status(500).json({ success: false, message: 'Server error' });

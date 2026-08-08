@@ -38,11 +38,25 @@ const resolveLocationFromAddress = async (address, allLocations) => {
   let matchedLoc = await Location.findOne({ name: new RegExp(`^${escapedAddress}$`, 'i') });
   if (matchedLoc) return matchedLoc;
 
-  // Second attempt: substring match against active locations
+  // Second attempt: substring match against active locations and their aliases
   let bestMatch = null;
   for (const loc of allLocations) {
+    let matches = false;
     const escapedName = loc.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     if (new RegExp(`\\b${escapedName}\\b`, 'i').test(address)) {
+      matches = true;
+    } else if (loc.aliases && loc.aliases.length > 0) {
+      for (const alias of loc.aliases) {
+        if (!alias) continue;
+        const escapedAlias = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (new RegExp(`\\b${escapedAlias}\\b`, 'i').test(address)) {
+          matches = true;
+          break;
+        }
+      }
+    }
+
+    if (matches) {
       if (!bestMatch || loc.name.length > bestMatch.name.length) {
         bestMatch = loc;
       }

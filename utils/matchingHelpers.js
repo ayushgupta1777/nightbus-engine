@@ -61,10 +61,95 @@ const isCapacityCompatible = (capacity, peopleCount) => {
   return cap >= minCap && cap <= maxCap;
 };
 
+const { getEquivalentVehicleTypes } = require('./vehicleTypeMapper');
+
+/**
+ * Detailed evaluation of a rental match. Returns flags for debugging and filtering.
+ */
+const evaluateRentalMatch = (ownerConfig, request, fromCity, toCity, availableDates) => {
+  const evalResult = {
+    routeMatch: false,
+    capacityMatch: false,
+    budgetMatch: false,
+    vehicleTypeMatch: false,
+    availabilityMatch: false,
+    tripTypeMatch: true, // Placeholder if trip type logic is added
+    acMatch: true,       // Placeholder
+    luggageMatch: true,  // Placeholder
+    isMatch: false,
+    reasons: []
+  };
+
+  // 1. Route Match
+  const ownerFrom = (ownerConfig.from || '').toLowerCase();
+  const ownerTo = (ownerConfig.to || '').toLowerCase();
+  const reqFrom = (request.from || '').toLowerCase();
+  const reqTo = (request.to || '').toLowerCase();
+  const resolvedFrom = (fromCity || '').toLowerCase();
+  const resolvedTo = (toCity || '').toLowerCase();
+
+  if ((ownerFrom === reqFrom || ownerFrom === resolvedFrom) && 
+      (ownerTo === reqTo || ownerTo === resolvedTo)) {
+    evalResult.routeMatch = true;
+  } else {
+    evalResult.reasons.push(`Route mismatch: Owner(${ownerConfig.from}->${ownerConfig.to}) vs Request(${request.from}->${request.to} / Resolved: ${fromCity}->${toCity})`);
+  }
+
+  // 2. Capacity Match
+  evalResult.capacityMatch = isCapacityCompatible(ownerConfig.capacity, request.peopleCount);
+  if (!evalResult.capacityMatch) {
+    evalResult.reasons.push(`Capacity mismatch: Owner(${ownerConfig.capacity}) vs Request(${request.peopleCount} pax, 60:40 rule failed)`);
+  }
+
+  // 3. Budget Match
+  evalResult.budgetMatch = isPriceOverlapping(ownerConfig.priceMin, ownerConfig.priceMax, request.budgetMin, request.budgetMax);
+  if (!evalResult.budgetMatch) {
+    evalResult.reasons.push(`Budget mismatch: Owner(${ownerConfig.priceMin}-${ownerConfig.priceMax}) vs Request(${request.budgetMin}-${request.budgetMax})`);
+  }
+
+  // 4. Vehicle Type Match
+  const equivTypes = getEquivalentVehicleTypes(request.vehicleType).map(t => t.toLowerCase());
+  const ownerType = (ownerConfig.vehicleType || '').toLowerCase();
+  if (equivTypes.includes(ownerType)) {
+    evalResult.vehicleTypeMatch = true;
+  } else {
+    evalResult.reasons.push(`Vehicle Type mismatch: Owner(${ownerConfig.vehicleType}) vs Request(${request.vehicleType})`);
+  }
+
+  // 5. Availability Match
+  if (availableDates && Array.isArray(availableDates)) {
+    const startOfDay = new Date(request.date);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date(request.date);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+    
+    evalResult.availabilityMatch = availableDates.some(d => {
+      const date = new Date(d);
+      return date >= startOfDay && date <= endOfDay;
+    });
+    if (!evalResult.availabilityMatch) {
+      evalResult.reasons.push(`Availability mismatch: Owner not available on ${startOfDay.toISOString().split('T')[0]}`);
+    }
+  } else {
+    // If not provided, assume true (handled by external query)
+    evalResult.availabilityMatch = true;
+  }
+
+  // Final Match
+  evalResult.isMatch = evalResult.routeMatch && 
+                       evalResult.capacityMatch && 
+                       evalResult.budgetMatch && 
+                       evalResult.vehicleTypeMatch &&
+                       evalResult.availabilityMatch;
+
+  return evalResult;
+};
+
 module.exports = {
   getMatchingConfig,
   getCapacityBounds,
   getPriceBounds,
   isPriceOverlapping,
-  isCapacityCompatible
+  isCapacityCompatible,
+  evaluateRentalMatch
 };

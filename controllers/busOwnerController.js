@@ -831,10 +831,26 @@ exports.createStaff = async (req, res) => {
     const ownerId = req.userId;
     const { name, phone, email, password, staffRole, assignedBus, permissions, salary, licenseNumber } = req.body;
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !email.trim()) {
+      return res.status(400).json({ success: false, message: 'Email address is required' });
+    }
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({ success: false, message: 'Invalid email format' });
+    }
+    if (!password || !password.trim()) {
+      return res.status(400).json({ success: false, message: 'Password is required' });
+    }
+
     // 1. Check if user already exists
     const existingUser = await User.findOne({ phone });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'User with this phone already exists' });
+    }
+
+    const existingEmailUser = await User.findOne({ email: email.trim() });
+    if (existingEmailUser) {
+      return res.status(400).json({ success: false, message: 'User with this email already exists' });
     }
 
     // 2. Create staff user
@@ -842,9 +858,9 @@ exports.createStaff = async (req, res) => {
     const staff = new User({
       name,
       phone,
-      email: email || undefined,
-      password: password || 'staff123',
-      plainPassword: password || 'staff123',
+      email: email.trim(),
+      password: password.trim(),
+      plainPassword: password.trim(),
       role: 'staff',
       ownerId,
       staffRole,
@@ -879,16 +895,39 @@ exports.updateStaff = async (req, res) => {
     const staff = await User.findOne({ _id: staffId, ownerId, role: 'staff' });
     if (!staff) return res.status(404).json({ success: false, message: 'Staff member not found' });
 
-    // Handle password update if provided and different
-    if (updates.password && updates.password !== staff.plainPassword) {
-      staff.password = updates.password;
-      staff.plainPassword = updates.password;
+    // Handle password update if provided
+    if (updates.password !== undefined) {
+      if (!updates.password || !updates.password.trim()) {
+        return res.status(400).json({ success: false, message: 'Password is required' });
+      }
+      if (updates.password.trim() !== staff.plainPassword) {
+        staff.password = updates.password.trim();
+        staff.plainPassword = updates.password.trim();
+      }
     }
 
     // Update other fields
     if (updates.name) staff.name = updates.name;
     if (updates.phone) staff.phone = updates.phone;
-    if (updates.email !== undefined) staff.email = updates.email || undefined;
+    
+    if (updates.email !== undefined) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!updates.email || !updates.email.trim()) {
+        return res.status(400).json({ success: false, message: 'Email address is required' });
+      }
+      if (!emailRegex.test(updates.email.trim())) {
+        return res.status(400).json({ success: false, message: 'Invalid email format' });
+      }
+      
+      if (updates.email.trim() !== staff.email) {
+        const existingEmailUser = await User.findOne({ email: updates.email.trim() });
+        if (existingEmailUser && existingEmailUser._id.toString() !== staff._id.toString()) {
+          return res.status(400).json({ success: false, message: 'User with this email already exists' });
+        }
+      }
+      staff.email = updates.email.trim();
+    }
+    
     if (updates.salary !== undefined) staff.salary = updates.salary;
     if (updates.licenseNumber !== undefined) staff.licenseNumber = updates.licenseNumber || undefined;
     if (updates.isActive !== undefined) staff.isActive = updates.isActive;

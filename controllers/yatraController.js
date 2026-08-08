@@ -371,14 +371,21 @@ exports.getMyBookings = async (req, res) => {
     let journeyYatras = [];
     try {
       journeyYatras = await Journey.find({
-        $or: [
-          { customerId: rawUserId },
-          { customerId: req.userId },
-          { customerId: req.user?._id }
-        ].filter(Boolean),
-        $or: [
-          { isYatra: true },
-          { bookingType: 'yatra' }
+        $and: [
+          {
+            $or: [
+              { customerId: rawUserId },
+              { customerId: req.userId },
+              { customerId: req.user?._id }
+            ].filter(Boolean)
+          },
+          {
+            $or: [
+              { isYatra: true },
+              { bookingType: 'yatra' },
+              { bookingType: 'package' }
+            ]
+          }
         ]
       })
         .populate({
