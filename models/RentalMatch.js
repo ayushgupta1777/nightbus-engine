@@ -31,7 +31,7 @@ const rentalMatchSchema = new mongoose.Schema({
   },
   matchType: {
     type: String,
-    enum: ['exact', 'nearby', 'similarity'],
+    enum: ['exact', 'nearby', 'similarity', 'partial'],
     default: 'exact'
   },
   status: {

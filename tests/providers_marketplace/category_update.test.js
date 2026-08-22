@@ -4,7 +4,7 @@ const ServiceProvider = require('../../models/ServiceProvider');
 const User = require('../../models/User');
 
 describe('Service Category Update & New Categories Test', () => {
-  const newCategories = ['Auto Parts Shop', 'Watch Repair Centre', 'Flat Tire Repair', 'Workshop'];
+  const newCategories = ['Auto Parts Shop', 'Vehicle Washing Center', 'Flat Tire Repair', 'Workshop'];
   const testUser = {
     name: 'Category Tester',
     email: 'cat_tester_unique@example.com',

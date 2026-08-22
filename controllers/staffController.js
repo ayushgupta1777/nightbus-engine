@@ -33,24 +33,28 @@ const resolveSegment = async (segmentIdInput) => {
   const cleanId = targetId.replace(/^(BK|YTR|#)/i, '').trim().toLowerCase();
   if (cleanId.length === 6) {
     const seg = await Segment.findOne({
-      $or: [
-        {
-          $expr: {
+      $expr: {
+        $or: [
+          {
             $eq: [
               { $toLower: { $substrCP: [ { $toString: "$_id" }, 18, 6 ] } },
               cleanId
             ]
-          }
-        },
-        {
-          $expr: {
-            $eq: [
-              { $toLower: { $substrCP: [ { $toString: "$journeyId" }, 18, 6 ] } },
-              cleanId
+          },
+          {
+            $and: [
+              { $ne: ["$journeyId", null] },
+              { $ne: ["$journeyId", undefined] },
+              {
+                $eq: [
+                  { $toLower: { $substrCP: [ { $toString: "$journeyId" }, 18, 6 ] } },
+                  cleanId
+                ]
+              }
             ]
           }
-        }
-      ]
+        ]
+      }
     });
     if (seg) return seg;
   }
@@ -229,6 +233,17 @@ exports.updatePosition = async (req, res) => {
         await trip.save();
     }
 
+    // Update the live bus location so Food Vendors and Customers can track it
+    if (location && location.latitude && location.longitude) {
+      const Bus = require('../models/Bus');
+      await Bus.findByIdAndUpdate(trip.busId, {
+        currentLocation: {
+          type: 'Point',
+          coordinates: [location.longitude, location.latitude]
+        }
+      });
+    }
+
     res.json({
       success: true,
       message: `Position updated: ${isArrival ? 'Arrived at' : 'Departed from'} stop`,
@@ -326,11 +341,17 @@ exports.getPassengerManifest = async (req, res) => {
         }
 
         // Fetch all confirmed/boarded segments for this journey and bus today
+        const startOfDay = new Date(trip.serviceDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date(trip.serviceDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
         const segments = await Segment.find({
             busId: trip.busId,
             travelDate: { 
-                $gte: new Date(trip.serviceDate).setHours(0,0,0,0),
-                $lt: new Date(trip.serviceDate).setHours(23,59,59,999)
+                $gte: startOfDay,
+                $lt: endOfDay
             },
             status: { $in: ['confirmed', 'boarded', 'in_transit', 'completed'] }
         }).sort('fromStop.name');

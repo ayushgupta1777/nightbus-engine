@@ -241,7 +241,8 @@ async function findDirectJourneys(from, to, dayName, passengers) {
                   availableSeats,
                   pricePerPerson: basePrice,
                   totalPrice: basePrice * passengers,
-                  autoConfirm
+                  autoConfirm,
+                  amenities: route.busId.amenities || []
                 }
               ],
               totalPrice: basePrice * passengers,
@@ -466,7 +467,8 @@ async function findLegs(from, to, dayName, passengers) {
                 route.stops[i].arrivalTime
               ),
               availableSeats,
-              pricePerPerson: calculateSegmentPrice(route, fromIndex, i)
+              pricePerPerson: calculateSegmentPrice(route, fromIndex, i),
+              amenities: route.busId.amenities || []
             });
           }
         }
@@ -520,7 +522,8 @@ async function findLegs(from, to, dayName, passengers) {
               duration: calculateDuration(departureTime, arrivalTime),
               durationMinutes: getTimeDifferenceMinutes(departureTime, arrivalTime),
               availableSeats: availableInRound,
-              pricePerPerson: calculateSegmentPrice(route, fromIndex, toIndex)
+              pricePerPerson: calculateSegmentPrice(route, fromIndex, toIndex),
+              amenities: route.busId.amenities || []
             });
           }
         }
