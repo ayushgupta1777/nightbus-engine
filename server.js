@@ -122,6 +122,7 @@ app.use('/api/marketplace', require('./routes/marketplaceRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api/coupons', require('./routes/couponRoutes'));
 app.use('/api/home-content', require('./routes/homeContentRoutes'));
+app.use('/api/developer', require('./routes/developer'));
 
 // Share link fallback routes (Trigger Nodemon Reload)
 app.use('/share', require('./routes/shareRoutes'));
@@ -148,8 +149,27 @@ app.use((req, res) => {
 });
 
 // Error handler
-app.use((err, req, res, next) => {
+app.use(async (err, req, res, next) => {
   console.error('❌ Error:', err.stack);
+  
+  // Log error to SystemLog for developer mode
+  try {
+    const SystemLog = require('./models/SystemLog');
+    await SystemLog.create({
+      level: 'error',
+      message: err.message || 'Server error',
+      source: 'backend',
+      meta: {
+        path: req.path,
+        method: req.method,
+        stack: err.stack,
+        ip: req.ip
+      }
+    });
+  } catch (logErr) {
+    console.error('Failed to write SystemLog:', logErr.message);
+  }
+
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Server error',
