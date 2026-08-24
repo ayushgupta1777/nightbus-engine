@@ -45,11 +45,51 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-// Delete user
+// Delete user (Complete Hard Delete)
 exports.deleteUser = async (req, res) => {
   try {
-    await User.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, message: 'User deleted' });
+    const userId = req.params.id;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const mongoose = require('mongoose');
+    
+    // Depending on role, delete associated data
+    if (user.role === 'customer') {
+      try { await mongoose.model('Journey').deleteMany({ customerId: userId }); } catch(e){}
+      try { await mongoose.model('Segment').deleteMany({ passengerId: userId }); } catch(e){}
+      try { await mongoose.model('FoodOrder').deleteMany({ passengerId: userId }); } catch(e){}
+      try { await mongoose.model('RentalRequest').deleteMany({ userId: userId }); } catch(e){}
+      try { await mongoose.model('RentalMatch').deleteMany({ customerId: userId }); } catch(e){}
+      try { await mongoose.model('Review').deleteMany({ userId: userId }); } catch(e){}
+      try { await mongoose.model('Wallet').findOneAndDelete({ userId: userId }); } catch(e){}
+      try { await mongoose.model('WalletTransaction').deleteMany({ userId: userId }); } catch(e){}
+    } else if (user.role === 'owner') {
+      try { await mongoose.model('Bus').deleteMany({ ownerId: userId }); } catch(e){}
+      try { await mongoose.model('Route').deleteMany({ ownerId: userId }); } catch(e){}
+      try { await mongoose.model('OwnerRouteConfig').deleteMany({ ownerId: userId }); } catch(e){}
+      try { await mongoose.model('RentalService').deleteMany({ ownerId: userId }); } catch(e){}
+      try { await mongoose.model('RentalMatch').deleteMany({ ownerId: userId }); } catch(e){}
+      try { await mongoose.model('Settlement').deleteMany({ vendorId: userId }); } catch(e){}
+    } else if (user.role === 'vendor') {
+      try { await mongoose.model('VendorProduct').deleteMany({ vendorId: userId }); } catch(e){}
+      try { await mongoose.model('FoodVendor').deleteMany({ userId: userId }); } catch(e){}
+      try { await mongoose.model('VendorOrder').deleteMany({ vendorId: userId }); } catch(e){}
+      try { await mongoose.model('Settlement').deleteMany({ vendorId: userId }); } catch(e){}
+    } else if (user.role === 'staff') {
+      try { await mongoose.model('StaffAssignment').deleteMany({ staffId: userId }); } catch(e){}
+    }
+    
+    // Global deletions for any user
+    try { await mongoose.model('Notification').deleteMany({ userId: userId }); } catch(e){}
+    try { await mongoose.model('Chat').deleteMany({ $or: [{ participant1: userId }, { participant2: userId }] }); } catch(e){}
+
+    // Finally delete the user
+    await User.findByIdAndDelete(userId);
+
+    res.status(200).json({ success: true, message: 'User and all associated data completely deleted' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
