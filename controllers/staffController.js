@@ -240,6 +240,12 @@ exports.updatePosition = async (req, res) => {
         currentLocation: {
           type: 'Point',
           coordinates: [location.longitude, location.latitude]
+        },
+        lastKnownLocation: {
+          coordinates: [location.longitude, location.latitude],
+          speed: 0,
+          timestamp: new Date(),
+          heading: 0
         }
       });
     }
