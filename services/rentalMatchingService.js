@@ -110,9 +110,11 @@ exports.matchRequestToOwners = async (requestId) => {
 
     for (const cfg of configs) {
       if (!cfg.ownerId) continue;
-      // ONLY match if the owner is available on this date
+      
       const ownerId = (cfg.ownerId._id || cfg.ownerId).toString();
-      if (!availableOwnerIds.includes(ownerId)) continue;
+      // Relaxed availability check: we do NOT strict filter by availableOwnerIds
+      // to ensure owners receive leads for their service routes and can manually accept.
+      // if (!availableOwnerIds.includes(ownerId)) continue;
 
       let score = 0;
       let matchType = 'similarity';

@@ -356,13 +356,16 @@ exports.getMyBookings = async (req, res) => {
     const rawUserId = req.user?._id || req.user?.id || req.userId;
     const Journey = require('../models/Journey');
 
+    const validUserIds = [rawUserId, req.userId, req.user?._id].filter(id => id);
+    if (validUserIds.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const customerOrConditions = validUserIds.map(id => ({ customerId: id }));
+
     // 1. Fetch YatraPackage bookings
     const yatraBookings = await YatraBooking.find({
-      $or: [
-        { customerId: rawUserId },
-        { customerId: req.userId },
-        { customerId: req.user?._id }
-      ].filter(Boolean)
+      $or: customerOrConditions
     })
       .populate('packageId', 'title startDate endDate departurePoint category pricePerPerson status images')
       .sort({ createdAt: -1 });
@@ -372,13 +375,7 @@ exports.getMyBookings = async (req, res) => {
     try {
       journeyYatras = await Journey.find({
         $and: [
-          {
-            $or: [
-              { customerId: rawUserId },
-              { customerId: req.userId },
-              { customerId: req.user?._id }
-            ].filter(Boolean)
-          },
+          { $or: customerOrConditions },
           {
             $or: [
               { isYatra: true },

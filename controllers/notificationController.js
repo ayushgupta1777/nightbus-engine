@@ -11,24 +11,62 @@ exports.getUserNotifications = async (req, res) => {
   try {
     const userId = req.userId;
     const { page = 1, limit = 20 } = req.query;
+    const limitNum = parseInt(limit);
+    const skipNum = (parseInt(page) - 1) * limitNum;
 
+    // Fetch user-specific notifications
     const notifications = await Notification.find({ userId })
       .sort({ createdAt: -1 })
-      .limit(parseInt(limit))
-      .skip((parseInt(page) - 1) * parseInt(limit));
+      .limit(limitNum)
+      .skip(skipNum)
+      .lean();
 
-    const total = await Notification.countDocuments({ userId });
+    // Fetch global announcements
+    const GlobalAnnouncement = require('../models/GlobalAnnouncement');
+    const globalAnnouncements = await GlobalAnnouncement.find({
+      isActive: true,
+      targetRoles: { $in: ['all', req.userRole || 'customer'] }
+    })
+      .sort({ createdAt: -1 })
+      .limit(limitNum)
+      .skip(skipNum)
+      .lean();
+
+    // Format globals to match Notification schema
+    const formattedGlobals = globalAnnouncements.map(ga => ({
+      _id: ga._id,
+      userId: userId,
+      title: ga.title,
+      body: ga.body,
+      type: 'admin_msg',
+      status: 'unread',
+      createdAt: ga.createdAt,
+      isGlobal: true
+    }));
+
+    // Merge, sort, and slice to limit
+    const allNotifications = [...notifications, ...formattedGlobals]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, limitNum);
+
+    const totalUserNotifs = await Notification.countDocuments({ userId });
+    const totalGlobals = await GlobalAnnouncement.countDocuments({
+      isActive: true,
+      targetRoles: { $in: ['all', req.userRole || 'customer'] }
+    });
+    
+    const total = totalUserNotifs + totalGlobals;
     const unreadCount = await Notification.countDocuments({ userId, status: 'unread' });
 
     res.status(200).json({
       success: true,
       data: {
-        notifications,
+        notifications: allNotifications,
         meta: {
           total,
           unreadCount,
           page: parseInt(page),
-          pages: Math.ceil(total / parseInt(limit))
+          pages: Math.ceil(total / limitNum)
         }
       }
     });
