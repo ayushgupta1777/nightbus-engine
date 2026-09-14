@@ -231,6 +231,9 @@ async function findDirectJourneys(from, to, dayName, passengers) {
                   busId: route.busId._id,
                   chassisNumber: route.busId.chassisNumber,
                   busType: route.busId.busType || 'Standard',
+                  busNumber: route.busId.busNumber || route.busId.registrationNumber || route.busId.chassisNumber,
+                  busName: route.busId.busName || route.busId.ownerId?.ownerSettings?.businessName || 'Night Bus Travels',
+                  photos: route.busId.photos || [],
                   from,
                   to,
                   departureTime,
@@ -426,7 +429,10 @@ async function findLegs(from, to, dayName, passengers) {
   const legs = [];
 
   try {
-    const routes = await Route.find(getDayMatchQuery(dayName)).populate('busId');
+    const routes = await Route.find(getDayMatchQuery(dayName)).populate({
+      path: 'busId',
+      populate: { path: 'ownerId', select: 'ownerSettings' }
+    });
 
     for (const route of routes) {
       if (!route || !route.busId) continue;
@@ -454,6 +460,9 @@ async function findLegs(from, to, dayName, passengers) {
               busId: route.busId._id,
               chassisNumber: route.busId.chassisNumber,
               busType: route.busId.busType || 'Standard',
+              busNumber: route.busId.busNumber || route.busId.registrationNumber || route.busId.chassisNumber,
+              busName: route.busId.busName || route.busId.ownerId?.ownerSettings?.businessName || 'Night Bus Travels',
+              photos: route.busId.photos || [],
               from,
               to: toName,
               departureTime: route.stops[fromIndex].departureTime,
@@ -514,6 +523,9 @@ async function findLegs(from, to, dayName, passengers) {
               busId: route.busId._id,
               chassisNumber: route.busId.chassisNumber,
               busType: route.busId.busType || 'Standard',
+              busNumber: route.busId.busNumber || route.busId.registrationNumber || route.busId.chassisNumber,
+              busName: route.busId.busName || route.busId.ownerId?.ownerSettings?.businessName || 'Night Bus Travels',
+              photos: route.busId.photos || [],
               from,
               to,
               departureTime,
