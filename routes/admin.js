@@ -20,6 +20,7 @@ router.get('/routes', adminController.getAllRoutes);
 
 router.get('/analytics', adminController.getAnalytics);
 router.get('/transactions', adminController.getTransactions);
+router.get('/platform-stats', adminController.getPlatformStats);
 
 router.post('/verify-vendor/:vendorId', adminController.verifyVendor);
 router.post('/verify-owner/:ownerId', adminController.verifyOwner);

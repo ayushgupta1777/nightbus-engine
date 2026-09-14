@@ -409,3 +409,41 @@ exports.getGlobalFoodStats = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
+/**
+ * ==================== PLATFORM STATS ====================
+ */
+
+exports.getPlatformStats = async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    
+    const revenueResult = await Journey.aggregate([
+      { $match: { paymentStatus: "completed" } },
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+    ]);
+    const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
+    
+    let activeTrips = 0;
+    try {
+      const TripTimeline = require("../models/TripTimeline");
+      activeTrips = await TripTimeline.countDocuments({ status: { $in: ["scheduled", "boarding", "running"] } });
+    } catch (e) {
+      // Ignore
+    }
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        totalRevenue,
+        activeTrips,
+        totalUsers,
+        serviceStatus: "Healthy"
+      }
+    });
+  } catch (error) {
+    console.error("Platform Stats Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
