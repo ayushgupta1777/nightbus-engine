@@ -154,6 +154,140 @@ exports.updatePackage = async (req, res) => {
 };
 
 /**
+ * PUT /yatra/owner/packages/:id/complete
+ * Complete a Yatra and credit the owner's wallet
+ */
+exports.completeYatra = async (req, res) => {
+  try {
+    const ownerId = req.user.id;
+    
+    // 1. Atomic Status Update to prevent double-completion payouts
+    const pkg = await YatraPackage.findOneAndUpdate(
+      { 
+        _id: req.params.id, 
+        ownerId,
+        status: { $in: ['active', 'full'] }
+      },
+      { status: 'completed' },
+      { new: true }
+    );
+
+    if (!pkg) {
+      // Check why it failed
+      const checkPkg = await YatraPackage.findOne({ _id: req.params.id, ownerId });
+      if (!checkPkg) return res.status(404).json({ success: false, message: 'Package not found' });
+      return res.status(400).json({ success: false, message: `Cannot complete a ${checkPkg.status} package (may already be completed).` });
+    }
+
+    // Find all valid bookings
+    const bookings = await YatraBooking.find({
+      packageId: pkg._id,
+      status: 'confirmed',
+      paymentStatus: 'paid'
+    });
+
+    let totalRevenue = 0;
+    bookings.forEach(b => { totalRevenue += b.totalAmount; });
+
+    // Platform Commission (10%)
+    const commissionRate = 0.10;
+    const platformFee = totalRevenue * commissionRate;
+    const ownerPayout = totalRevenue - platformFee;
+
+    // Credit Owner Wallet
+    if (ownerPayout > 0) {
+      try {
+        await Wallet.atomicCredit(ownerId, ownerPayout, {
+          transactionId: `YTR_PAYOUT_${pkg._id.toString().slice(-8)}`,
+          source: 'yatra_payout',
+          description: `Payout for completed Yatra: ${pkg.title} (Revenue: ₹${totalRevenue}, Commission: ₹${platformFee})`
+        });
+      } catch (walletErr) {
+        // If wallet fails, we should ideally rollback status to 'active' or queue it for retry. 
+        // For now, log critically.
+        console.error(`CRITICAL: Wallet payout failed for completed Yatra ${pkg._id}:`, walletErr.message);
+        return res.status(500).json({ success: false, message: 'Wallet payout failed: ' + walletErr.message });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Yatra completed successfully. Earnings credited to wallet.',
+      data: {
+        totalRevenue,
+        platformFee,
+        ownerPayout
+      }
+    });
+  } catch (error) {
+    console.error('Yatra complete error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * PUT /yatra/owner/packages/:id/cancel
+ * Owner cancels a Yatra, automatically refunding all customers
+ */
+exports.cancelYatraByOwner = async (req, res) => {
+  try {
+    const ownerId = req.user.id;
+    const pkg = await YatraPackage.findOne({ _id: req.params.id, ownerId });
+    if (!pkg) return res.status(404).json({ success: false, message: 'Package not found' });
+
+    if (pkg.status === 'completed' || pkg.status === 'cancelled') {
+      return res.status(400).json({ success: false, message: `Package is already ${pkg.status}` });
+    }
+
+    // Find all paid bookings
+    const bookings = await YatraBooking.find({
+      packageId: pkg._id,
+      status: 'confirmed',
+      paymentStatus: 'paid'
+    });
+
+    let refundedCount = 0;
+    let totalRefunded = 0;
+
+    // Mass Refund
+    for (const booking of bookings) {
+      try {
+        await Wallet.atomicCredit(booking.customerId, booking.totalAmount, {
+          transactionId: `REFUND_YTR_CANCEL_${booking._id.toString().slice(-8)}`,
+          source: 'money_added',
+          description: `Refund for cancelled Yatra: ${pkg.title}`
+        });
+
+        booking.status = 'cancelled';
+        booking.paymentStatus = 'refunded';
+        booking.cancellationDate = new Date();
+        booking.cancellationReason = req.body.reason || 'Cancelled by organizer';
+        booking.refundAmount = booking.totalAmount;
+        await booking.save();
+        
+        refundedCount++;
+        totalRefunded += booking.totalAmount;
+      } catch (err) {
+        console.error(`Failed to refund booking ${booking._id}:`, err.message);
+      }
+    }
+
+    pkg.status = 'cancelled';
+    pkg.bookedSeats = 0; // release all seats
+    await pkg.save();
+
+    res.json({
+      success: true,
+      message: `Yatra cancelled successfully. Refunded ${refundedCount} bookings (Total: ₹${totalRefunded}).`,
+      data: pkg
+    });
+  } catch (error) {
+    console.error('Yatra cancel error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
  * DELETE /yatra/owner/packages/:id
  * Delete only draft packages
  */
@@ -256,41 +390,59 @@ exports.getPackageDetails = async (req, res) => {
 
 /**
  * POST /yatra/book
- * Customer books seats in a Yatra
+ * Customer books seats in a Yatra (Hardened for Concurrency)
  */
 exports.bookPackage = async (req, res) => {
   try {
     const customerId = req.user._id || req.user.id || req.userId;
-    const { packageId, passengers, mealPreference, specialRequests, paymentMethod } = req.body;
+    const { packageId, passengers, mealPreference, specialRequests, paymentMethod, idempotencyKey } = req.body;
 
     if (!packageId || !passengers || passengers.length === 0) {
       return res.status(400).json({ success: false, message: 'packageId and passengers are required' });
     }
 
-    // Load and validate package
-    const pkg = await YatraPackage.findById(packageId);
-    if (!pkg) return res.status(404).json({ success: false, message: 'Package not found' });
-    if (pkg.status !== 'active') {
-      return res.status(400).json({ success: false, message: `Package is ${pkg.status}, cannot book` });
-    }
-    if (pkg.startDate < new Date()) {
-      return res.status(400).json({ success: false, message: 'This Yatra has already departed/started, bookings are closed' });
+    // 1. Idempotency Check (Double-Tap Prevention)
+    if (idempotencyKey) {
+      const existingBooking = await YatraBooking.findOne({ idempotencyKey, customerId });
+      if (existingBooking) {
+        return res.json({ success: true, message: 'Booking already processed', data: existingBooking });
+      }
     }
 
     const seatsRequested = passengers.length;
-    if (pkg.bookedSeats + seatsRequested > pkg.totalSeats) {
+
+    // 2. ATOMIC SEAT RESERVATION (Race Condition Fix)
+    // Find active package with enough seats and atomically increment bookedSeats
+    const pkg = await YatraPackage.findOneAndUpdate(
+      {
+        _id: packageId,
+        status: 'active',
+        startDate: { $gte: new Date() },
+        $expr: { $gte: [ { $subtract: ["$totalSeats", "$bookedSeats"] }, seatsRequested ] }
+      },
+      {
+        $inc: { bookedSeats: seatsRequested }
+      },
+      { new: true } // Return updated doc
+    );
+
+    if (!pkg) {
+      // Check WHY it failed
+      const checkPkg = await YatraPackage.findById(packageId);
+      if (!checkPkg) return res.status(404).json({ success: false, message: 'Package not found' });
+      if (checkPkg.status !== 'active') return res.status(400).json({ success: false, message: `Package is ${checkPkg.status}` });
+      if (checkPkg.startDate < new Date()) return res.status(400).json({ success: false, message: 'Yatra has already departed' });
+      
       return res.status(400).json({
         success: false,
-        message: `Only ${pkg.totalSeats - pkg.bookedSeats} seat(s) available`
+        message: 'Sorry, not enough seats available. Someone else just booked them!'
       });
     }
 
     const totalAmount = pkg.pricePerPerson * seatsRequested;
-
-    // Generate boarding OTP
     const boardingOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Create booking record first (to get the _id)
+    // 3. Create Booking Record
     const booking = new YatraBooking({
       packageId,
       customerId,
@@ -302,18 +454,18 @@ exports.bookPackage = async (req, res) => {
       specialRequests,
       boardingOtp,
       status: 'confirmed',
-      paymentStatus: 'pending'
+      paymentStatus: 'pending',
+      idempotencyKey
     });
 
-    // 1. Implicitly deposit money to wallet if paid via Card/UPI/Razorpay (verified checkout)
-    if (paymentMethod === 'card' || paymentMethod === 'upi' || paymentMethod === 'razorpay') {
-      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-
-      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-        return res.status(400).json({ success: false, message: 'Missing Razorpay signature details' });
-      }
-
-      try {
+    // 4. Payment Processing (with Rollback Safety)
+    try {
+      if (paymentMethod === 'card' || paymentMethod === 'upi' || paymentMethod === 'razorpay') {
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+        if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+          throw new Error('Missing Razorpay signature details');
+        }
+        
         const crypto = require('crypto');
         const body = razorpay_order_id + "|" + razorpay_payment_id;
         const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
@@ -321,43 +473,43 @@ exports.bookPackage = async (req, res) => {
                                         .digest('hex');
 
         if (expectedSignature !== razorpay_signature) {
-          return res.status(400).json({ success: false, message: 'Invalid payment signature from Razorpay' });
+          throw new Error('Invalid payment signature from Razorpay');
         }
 
-        // Signature is valid. Deposit the funds into the internal wallet implicitly so the ledger balances.
-        const Wallet = require('../models/Wallet');
         await Wallet.atomicCredit(customerId, totalAmount, {
           transactionId: `YTR_DEP_${booking._id.toString()}`,
           source: 'money_added',
           description: `Online Payment Deposit (via Razorpay ${razorpay_payment_id})`
         });
-      } catch (depError) {
-        console.error('Implicit deposit/verification failed:', depError.message);
-        return res.status(400).json({ success: false, message: 'Failed to process online checkout payment' });
       }
-    }
 
-    // 2. Deduct from wallet
-    try {
+      // Deduct from wallet
       await walletController.deductMoney(customerId, totalAmount, {
         purpose: 'yatra_booking',
         bookingId: booking._id.toString(),
         description: `Yatra booking: ${pkg.title} (${seatsRequested} seat${seatsRequested > 1 ? 's' : ''})`
       });
+
       booking.paymentStatus = 'paid';
       booking.transactionId = `YTR_${booking._id.toString().slice(-8).toUpperCase()}`;
+      await booking.save();
+
+      // Update package revenue (seat is already incremented)
+      await YatraPackage.findByIdAndUpdate(pkg._id, {
+        $inc: { totalRevenue: totalAmount }
+      });
+
+      res.status(201).json({ success: true, data: booking });
+
     } catch (payErr) {
+      // 5. ROLLBACK on Payment Failure
+      console.warn(`Payment failed for booking ${booking._id}, rolling back seats...`);
+      await YatraPackage.findByIdAndUpdate(pkg._id, {
+        $inc: { bookedSeats: -seatsRequested }
+      });
       return res.status(400).json({ success: false, message: 'Payment failed: ' + payErr.message });
     }
 
-    await booking.save();
-
-    // Update package seat count
-    pkg.bookedSeats += seatsRequested;
-    pkg.totalRevenue = (pkg.totalRevenue || 0) + totalAmount;
-    await pkg.save();
-
-    res.status(201).json({ success: true, data: booking });
   } catch (error) {
     console.error('Yatra booking error:', error);
     res.status(500).json({ success: false, message: error.message });

@@ -37,6 +37,8 @@ router.post('/owner/packages/upload-images', upload.array('images', 5), yatraCon
 router.post('/owner/packages', yatraController.createPackage);
 router.get('/owner/packages', yatraController.getOwnerPackages);
 router.put('/owner/packages/:id', yatraController.updatePackage);
+router.put('/owner/packages/:id/complete', yatraController.completeYatra);
+router.put('/owner/packages/:id/cancel', yatraController.cancelYatraByOwner);
 router.delete('/owner/packages/:id', yatraController.deletePackage);
 router.get('/owner/packages/:id/bookings', yatraController.getPackageBookings);
 

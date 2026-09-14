@@ -92,6 +92,13 @@ const yatraBookingSchema = new mongoose.Schema({
   boardingOtp: {
     type: String,
     length: 6
+  },
+  
+  // Idempotency Key to prevent double charges
+  idempotencyKey: {
+    type: String,
+    sparse: true,
+    index: true
   }
 }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
