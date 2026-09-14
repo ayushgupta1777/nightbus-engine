@@ -29,6 +29,7 @@ const statusOrIdRouter = (req, res, next) => {
 
 // Protected routes
 router.post('/', auth.verifyToken, bookingController.createBooking);
+router.post('/lock-seats', auth.verifyToken, bookingController.lockSeats);
 router.get('/:id', auth.verifyToken, statusOrIdRouter);
 router.get('/user/:userId', auth.verifyToken, bookingController.getUserBookings);
 router.put('/:id/cancel', auth.verifyToken, bookingController.cancelBooking);

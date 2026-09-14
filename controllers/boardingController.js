@@ -3,6 +3,7 @@ const Segment = require('../models/Segment');
 const Journey = require('../models/Journey');
 const Bus = require('../models/Bus');
 const User = require('../models/User');
+const Wallet = require('../models/Wallet');
 const { sendNotification } = require('../utils/notifications');
 
 /**
@@ -179,6 +180,28 @@ exports.scanQRAndBoard = async (req, res) => {
     // Generate exit OTP for this segment
     const exitOTP = segment.generateExitOTP();
     await segment.save();
+
+    // Owner Payout via Wallet
+    if (segment.ownerEarnings > 0 && segment.busId && segment.busId.ownerId) {
+      try {
+        const transactionData = {
+          type: 'credit',
+          amount: segment.ownerEarnings,
+          description: `Payout for Ticket ${segment.seatNumber} on ${segment.fromStop.name} -> ${segment.toStop.name}`,
+          referenceId: segment._id,
+          referenceType: 'Segment',
+          metadata: {
+            journeyId: journey._id,
+            busId: segment.busId._id
+          }
+        };
+        await Wallet.atomicCredit(segment.busId.ownerId, segment.ownerEarnings, transactionData);
+        console.log(`[BOARDING] Payout of ₹${segment.ownerEarnings} credited to owner ${segment.busId.ownerId} for segment ${segment._id}`);
+      } catch (payoutErr) {
+        console.error(`[BOARDING PAYOUT ERROR] Failed to credit owner ${segment.busId.ownerId}:`, payoutErr);
+        // We log the error but don't block the boarding response
+      }
+    }
 
     // Return success
     res.json({

@@ -254,7 +254,7 @@ exports.finalizeWalletBooking = async ({ userId, bookingData }) => {
     const { totalAmount } = bookingData;
 
     // 1. Process Wallet Debit
-    const transactionId = `PAY${Date.now()}${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+    const transactionId = bookingData.idempotencyKey || `PAY${Date.now()}${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
     const result = await Wallet.atomicDebit(userId, totalAmount, {
         transactionId,
         purpose: 'booking',

@@ -9,6 +9,7 @@ const Route = require('../models/Route');
 const { sendNotification } = require('../utils/notifications');
 const { processPayment } = require('../utils/payment');
 const bookingService = require('../services/bookingService');
+const SeatLock = require('../models/SeatLock');
 
 /**
  * CREATE BOOKING
@@ -75,6 +76,64 @@ exports.createBooking = async (req, res) => {
       success: false,
       message: error.message || 'Failed to create booking'
     });
+  }
+};
+
+/**
+ * LOCK SEATS
+ * Temporarily locks seats for a user during the checkout process (10 min TTL)
+ */
+exports.lockSeats = async (req, res) => {
+  try {
+    const userId = req.userId || req.user?._id || req.user?.id;
+    const { routeId, busId, travelDate, seats } = req.body;
+
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    if (!routeId || !busId || !travelDate || !seats || seats.length === 0) {
+      return res.status(400).json({ success: false, message: 'Missing required parameters' });
+    }
+
+    const locks = [];
+    const failedSeats = [];
+
+    // Attempt to lock each seat
+    for (const seatNumber of seats) {
+      try {
+        const lock = new SeatLock({
+          routeId,
+          busId,
+          travelDate: new Date(travelDate),
+          seatNumber,
+          lockedBy: userId
+        });
+        await lock.save(); // Unique index prevents double lock
+        locks.push(lock);
+      } catch (err) {
+        // If unique index violation, seat is already locked
+        if (err.code === 11000) {
+          failedSeats.push(seatNumber);
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    // If any seat failed, release the successful ones and abort
+    if (failedSeats.length > 0) {
+      if (locks.length > 0) {
+        await SeatLock.deleteMany({ _id: { $in: locks.map(l => l._id) } });
+      }
+      return res.status(409).json({
+        success: false,
+        message: `The following seats just became unavailable: ${failedSeats.join(', ')}. Please select other seats.`,
+        failedSeats
+      });
+    }
+
+    res.json({ success: true, message: 'Seats locked for 10 minutes.' });
+  } catch (error) {
+    console.error('[LOCK SEATS ERROR]', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
