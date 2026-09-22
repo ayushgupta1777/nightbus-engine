@@ -682,6 +682,8 @@ exports.getPendingApprovals = async (req, res) => {
       query.status = { $in: ['confirmed', 'boarded', 'in_transit', 'completed'] };
     } else if (status === 'rejected') {
       query.status = 'rejected';
+    } else if (status === 'cancellations') {
+      query.status = 'cancellation_requested';
     }
     
     console.log(`[DEBUG getPendingApprovals] query: ${JSON.stringify(query)}`);
@@ -1293,6 +1295,151 @@ exports.getRevenueTransactions = async (req, res) => {
       success: true,
       data: { transactions }
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Request a wallet withdrawal
+ */
+exports.requestWithdrawal = async (req, res) => {
+  try {
+    const ownerId = req.userId;
+    const { amount, bankDetails } = req.body;
+
+    if (!amount || amount < 500) {
+      return res.status(400).json({ success: false, message: 'Minimum withdrawal amount is ₹500' });
+    }
+
+    const Wallet = require('../models/Wallet');
+    const Settlement = require('../models/Settlement');
+
+    // Debit the wallet
+    const debitResult = await Wallet.atomicDebit(ownerId, amount, {
+      purpose: 'withdrawal',
+      description: `Withdrawal request for ₹${amount}`
+    });
+
+    if (!debitResult.success) {
+      return res.status(400).json({ success: false, message: 'Failed to process withdrawal' });
+    }
+
+    // Create a Settlement record for admins to process
+    const settlement = await Settlement.create({
+      ownerId,
+      amount,
+      status: 'pending',
+      metadata: { bankDetails }
+    });
+
+    res.json({
+      success: true,
+      message: 'Withdrawal requested successfully',
+      data: { settlement, newBalance: debitResult.wallet.balance }
+    });
+  } catch (error) {
+    console.error('Withdrawal request error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to request withdrawal' });
+  }
+};
+
+/**
+ * Approve a customer cancellation request
+ */
+exports.approveCancellation = async (req, res) => {
+  try {
+    const ownerId = req.userId;
+    const { id: bookingId } = req.params;
+
+    const Journey = require('../models/Journey');
+    const Segment = require('../models/Segment');
+    const Wallet = require('../models/Wallet');
+    const { sendNotification } = require('../utils/notifications');
+
+    const booking = await Journey.findById(bookingId).populate('segments');
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (booking.status !== 'cancellation_requested') {
+      return res.status(400).json({ success: false, message: 'Booking is not pending cancellation' });
+    }
+
+    // Process the refund
+    const refundAmount = booking.refundAmount || 0;
+    
+    booking.status = 'cancelled';
+    booking.cancellationDate = new Date();
+    await booking.save();
+
+    await Segment.updateMany(
+      { journeyId: bookingId },
+      { status: 'cancelled' }
+    );
+
+    if (refundAmount > 0) {
+      const transactionId = `RFD${Date.now()}${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
+      await Wallet.atomicRefund(booking.customerId, refundAmount, {
+        transactionId,
+        reason: 'Owner approved cancellation',
+        bookingId: bookingId,
+        description: `Refund for approved cancellation #${bookingId.toString().slice(-6).toUpperCase()}`
+      });
+    }
+
+    await sendNotification(booking.customerId, {
+      title: 'Cancellation Approved',
+      body: `Your cancellation request was approved. ₹${refundAmount} has been refunded to your wallet.`,
+      type: 'booking_cancelled',
+      data: { bookingId, refundAmount }
+    }).catch(err => console.log('Notification error:', err));
+
+    res.json({ success: true, message: 'Cancellation approved successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Reject a customer cancellation request
+ */
+exports.rejectCancellation = async (req, res) => {
+  try {
+    const ownerId = req.userId;
+    const { id: bookingId } = req.params;
+    const { reason } = req.body;
+
+    const Journey = require('../models/Journey');
+    const Segment = require('../models/Segment');
+    const { sendNotification } = require('../utils/notifications');
+
+    const booking = await Journey.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (booking.status !== 'cancellation_requested') {
+      return res.status(400).json({ success: false, message: 'Booking is not pending cancellation' });
+    }
+
+    booking.status = 'confirmed'; // Revert back to confirmed
+    await booking.save();
+
+    await Segment.updateMany(
+      { journeyId: bookingId },
+      { status: 'confirmed' }
+    );
+
+    await sendNotification(booking.customerId, {
+      title: 'Cancellation Rejected',
+      body: `Your cancellation request was rejected by the bus owner: ${reason || 'No reason provided'}`,
+      type: 'booking_update',
+      data: { bookingId }
+    }).catch(err => console.log('Notification error:', err));
+
+    res.json({ success: true, message: 'Cancellation rejected successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

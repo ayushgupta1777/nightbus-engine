@@ -301,10 +301,10 @@ exports.cancelBooking = async (req, res) => {
       });
     }
 
-    if (booking.status === 'cancelled') {
+    if (booking.status === 'cancellation_requested') {
       return res.status(400).json({
         success: false,
-        message: 'Booking already cancelled'
+        message: 'Cancellation already requested'
       });
     }
 
@@ -317,7 +317,9 @@ exports.cancelBooking = async (req, res) => {
 
     const { amount: refundAmount, percentage: refundPercentage } = booking.calculateRefund();
 
-    booking.status = 'cancelled';
+    // Auto-approve if 100% refund (e.g. > 24 hours)? 
+    // The user didn't give explicit instructions, I'll default to manual approval for everything as per the plan's fallback.
+    booking.status = 'cancellation_requested';
     booking.cancellationReason = reason;
     booking.cancellationDate = new Date();
     booking.refundAmount = refundAmount;
@@ -326,42 +328,35 @@ exports.cancelBooking = async (req, res) => {
 
     await Segment.updateMany(
       { journeyId: bookingId },
-      { status: 'cancelled' }
+      { status: 'cancellation_requested' }
     );
 
-    if (refundAmount > 0) {
-      const transactionId = `RFD${Date.now()}${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-
-      await Wallet.atomicRefund(userId, refundAmount, {
-        transactionId,
-        reason: reason || 'Booking cancellation',
-        bookingId: bookingId,
-        description: `Refund for booking cancellation #${bookingId.toString().slice(-6).toUpperCase()} - ${refundPercentage}%`
-      });
-
-      await sendNotification(userId, {
-        title: 'Booking Cancelled',
-        body: `₹${refundAmount} (${refundPercentage}%) refunded to your wallet`,
-        type: 'booking_cancelled',
-        data: { bookingId, refundAmount }
-      }).catch(err => console.log('Notification error:', err));
-    } else {
-      await sendNotification(userId, {
-        title: 'Booking Cancelled',
-        body: 'No refund applicable for late cancellation',
-        type: 'booking_cancelled',
-        data: { bookingId }
-      }).catch(err => console.log('Notification error:', err));
+    // Notify the owner
+    try {
+      if (booking.segments && booking.segments.length > 0) {
+         const firstSegment = booking.segments[0];
+         const bus = await Bus.findById(firstSegment.busId);
+         if (bus && bus.ownerId) {
+             await sendNotification(bus.ownerId, {
+               title: 'New Cancellation Request',
+               body: `A passenger has requested to cancel their booking for Seat ${firstSegment.seatNumber}.`,
+               type: 'cancellation_request',
+               data: { bookingId: booking._id }
+             });
+         }
+      }
+    } catch (err) {
+      console.log('Failed to notify owner about cancellation request', err);
     }
 
     res.json({
       success: true,
-      message: 'Booking cancelled successfully',
+      message: 'Cancellation requested successfully. Waiting for bus owner approval.',
       booking: {
         id: booking._id,
         status: booking.status,
-        refundAmount,
-        refundPercentage
+        projectedRefundAmount: refundAmount,
+        projectedRefundPercentage: refundPercentage
       }
     });
 

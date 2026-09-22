@@ -58,6 +58,9 @@ router.get('/dashboard/stats', busOwnerController.getDashboardStats);
 router.get('/analytics/revenue', busOwnerController.getRevenueAnalytics);
 router.get('/analytics/transactions', busOwnerController.getRevenueTransactions);
 router.get('/settlements', busOwnerController.getSettlements);
+router.post('/wallet/withdraw', busOwnerController.requestWithdrawal);
+router.put('/bookings/:id/cancel-approve', busOwnerController.approveCancellation);
+router.put('/bookings/:id/cancel-reject', busOwnerController.rejectCancellation);
 router.get('/journeys/upcoming', busOwnerController.getUpcomingJourneys);
 
 // ==================== SETTINGS ====================

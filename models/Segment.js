@@ -500,6 +500,23 @@ segmentSchema.methods.verifyExitOTP = async function (otp, staffData = {}) {
 
   await this.save();
 
+  // Credit the owner's wallet
+  try {
+    const Bus = mongoose.model('Bus');
+    const bus = await Bus.findById(this.busId);
+    if (bus && bus.ownerId) {
+      const Wallet = mongoose.model('Wallet');
+      // Add standard metadata to track the credit
+      await Wallet.atomicCredit(bus.ownerId, this.ownerEarnings || 0, {
+        source: 'booking_completion',
+        description: `Earnings for segment ${this.segmentCode} (Seat ${this.seatNumber})`,
+        metadata: { segmentId: this._id }
+      });
+    }
+  } catch (err) {
+    console.error('Failed to credit owner wallet upon segment completion:', err);
+  }
+
   return { success: true, verified: true, message: 'Journey completed successfully' };
 };
 
