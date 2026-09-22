@@ -1,0 +1,2 @@
+This is a test file to check if the GitHub Action auto-deploy works!
+If you can see this file on the Hostinger server, the deployment was a success!
