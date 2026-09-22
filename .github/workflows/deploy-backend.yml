@@ -1,0 +1,32 @@
+name: Deploy to Hostinger Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SSH and Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOSTINGER_HOST_IP }}
+          username: ${{ secrets.HOSTINGER_USERNAME }}
+          password: ${{ secrets.HOSTINGER_PASSWORD }}
+          port: 22
+          script: |
+            # Go to the project folder (based on your logs)
+            cd ~/nightbus-engine
+            
+            # Pull the latest code from the main branch
+            git pull origin main
+            
+            # Install any new dependencies
+            npm install
+            
+            # Restart the PM2 server
+            pm2 restart nightbus
