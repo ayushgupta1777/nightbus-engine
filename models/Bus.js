@@ -130,10 +130,26 @@ const busSchema = new mongoose.Schema({
     required: [true, 'Insurance policy number is mandatory'],
     default: 'PENDING'
   },
+  insuranceIssueDate: {
+    type: Date,
+    required: [true, 'Insurance issue date is mandatory']
+  },
+  insuranceExpiryDate: {
+    type: Date,
+    required: [true, 'Insurance expiry date is mandatory']
+  },
   permitNumber: {
     type: String,
     required: [true, 'Permit number is mandatory'],
     default: 'PENDING'
+  },
+  permitIssueDate: {
+    type: Date,
+    required: [true, 'Permit issue date is mandatory']
+  },
+  permitExpiryDate: {
+    type: Date,
+    required: [true, 'Permit expiry date is mandatory']
   },
   fitnessNumber: {
     type: String,

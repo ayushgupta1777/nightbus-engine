@@ -67,13 +67,25 @@ exports.updateOwnerSettings = async (req, res) => {
 exports.createBus = async (req, res) => {
   try {
     const ownerId = req.userId;
-    const { permitNumber, insurancePolicyNumber, fitnessNumber } = req.body;
+    const { permitNumber, permitIssueDate, permitExpiryDate, insurancePolicyNumber, insuranceIssueDate, insuranceExpiryDate, fitnessNumber } = req.body;
 
     if (!permitNumber || !permitNumber.trim()) {
       return res.status(400).json({ success: false, message: 'Permit number is mandatory' });
     }
+    if (!permitIssueDate) {
+      return res.status(400).json({ success: false, message: 'Permit issue date is mandatory' });
+    }
+    if (!permitExpiryDate) {
+      return res.status(400).json({ success: false, message: 'Permit expiry date is mandatory' });
+    }
     if (!insurancePolicyNumber || !insurancePolicyNumber.trim()) {
       return res.status(400).json({ success: false, message: 'Insurance policy number is mandatory' });
+    }
+    if (!insuranceIssueDate) {
+      return res.status(400).json({ success: false, message: 'Insurance issue date is mandatory' });
+    }
+    if (!insuranceExpiryDate) {
+      return res.status(400).json({ success: false, message: 'Insurance expiry date is mandatory' });
     }
     if (!fitnessNumber || !fitnessNumber.trim()) {
       return res.status(400).json({ success: false, message: 'Fitness certificate number is mandatory' });
@@ -869,13 +881,6 @@ exports.createStaff = async (req, res) => {
     const ownerId = req.userId;
     const { name, phone, email, password, staffRole, assignedBus, permissions, salary, licenseNumber } = req.body;
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !email.trim()) {
-      return res.status(400).json({ success: false, message: 'Email address is required' });
-    }
-    if (!emailRegex.test(email.trim())) {
-      return res.status(400).json({ success: false, message: 'Invalid email format' });
-    }
     if (!password || !password.trim()) {
       return res.status(400).json({ success: false, message: 'Password is required' });
     }
@@ -886,17 +891,22 @@ exports.createStaff = async (req, res) => {
       return res.status(400).json({ success: false, message: 'User with this phone already exists' });
     }
 
-    const existingEmailUser = await User.findOne({ email: email.trim() });
-    if (existingEmailUser) {
-      return res.status(400).json({ success: false, message: 'User with this email already exists' });
+    if (email && email.trim() !== '') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        return res.status(400).json({ success: false, message: 'Invalid email format' });
+      }
+      const existingEmailUser = await User.findOne({ email: email.trim() });
+      if (existingEmailUser) {
+        return res.status(400).json({ success: false, message: 'User with this email already exists' });
+      }
     }
 
     // 2. Create staff user
     // Do NOT pre-hash password here as the User model has a pre-save hook that hashes it.
-    const staff = new User({
+    const staffData = {
       name,
       phone,
-      email: email.trim(),
       password: password.trim(),
       plainPassword: password.trim(),
       role: 'staff',
@@ -907,7 +917,13 @@ exports.createStaff = async (req, res) => {
       salary: salary || 0,
       licenseNumber: licenseNumber || undefined,
       isActive: true
-    });
+    };
+    
+    if (email && email.trim() !== '') {
+      staffData.email = email.trim();
+    }
+
+    const staff = new User(staffData);
 
     await staff.save();
 
@@ -949,26 +965,28 @@ exports.updateStaff = async (req, res) => {
     if (updates.phone) staff.phone = updates.phone;
     
     if (updates.email !== undefined) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!updates.email || !updates.email.trim()) {
-        return res.status(400).json({ success: false, message: 'Email address is required' });
-      }
-      if (!emailRegex.test(updates.email.trim())) {
-        return res.status(400).json({ success: false, message: 'Invalid email format' });
-      }
-      
-      if (updates.email.trim() !== staff.email) {
-        const existingEmailUser = await User.findOne({ email: updates.email.trim() });
-        if (existingEmailUser && existingEmailUser._id.toString() !== staff._id.toString()) {
-          return res.status(400).json({ success: false, message: 'User with this email already exists' });
+      if (updates.email.trim() === '') {
+        staff.email = undefined; // Allow clearing email
+      } else {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(updates.email.trim())) {
+          return res.status(400).json({ success: false, message: 'Invalid email format' });
         }
+        
+        if (updates.email.trim() !== staff.email) {
+          const existingEmailUser = await User.findOne({ email: updates.email.trim() });
+          if (existingEmailUser && existingEmailUser._id.toString() !== staff._id.toString()) {
+            return res.status(400).json({ success: false, message: 'User with this email already exists' });
+          }
+        }
+        staff.email = updates.email.trim();
       }
-      staff.email = updates.email.trim();
     }
     
     if (updates.salary !== undefined) staff.salary = updates.salary;
     if (updates.licenseNumber !== undefined) staff.licenseNumber = updates.licenseNumber || undefined;
     if (updates.isActive !== undefined) staff.isActive = updates.isActive;
+    if (updates.staffRole !== undefined) staff.staffRole = updates.staffRole;
     if (updates.permissions) {
       staff.set('permissions', updates.permissions);
       staff.markModified('permissions');
@@ -986,10 +1004,27 @@ exports.updateStaff = async (req, res) => {
   }
 };
 
+exports.deleteStaff = async (req, res) => {
+  try {
+    const { staffId } = req.params;
+    const ownerId = req.userId;
+
+    const staff = await User.findOneAndDelete({ _id: staffId, ownerId, role: 'staff' });
+    if (!staff) return res.status(404).json({ success: false, message: 'Staff member not found' });
+
+    // Remove their assignments
+    await StaffAssignment.deleteMany({ staffId, ownerId });
+
+    res.json({ success: true, message: 'Staff member removed successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 exports.assignStaff = async (req, res) => {
   try {
     const ownerId = req.userId;
-    const { staffId, busId, role, shiftDate, shiftStartTime, shiftEndTime } = req.body;
+    const { staffId, busId, role, shiftDate, shiftStartTime, shiftEndTime, permissions } = req.body;
 
     // 1. Verify staff and bus belong to owner
     const [staff, bus] = await Promise.all([
@@ -1020,12 +1055,16 @@ exports.assignStaff = async (req, res) => {
 
     await assignment.save();
 
-    // 4. Update User model shortcuts
+    // 4. Update User model shortcuts and permissions
     staff.assignedBus = busId;
     staff.staffRole = role;
+    if (permissions) {
+      staff.set('permissions', permissions);
+      staff.markModified('permissions');
+    }
     await staff.save();
 
-    res.json({ success: true, message: 'Staff assigned successfully', data: { assignment } });
+    res.json({ success: true, message: 'Staff assigned successfully', data: { assignment, staff } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -1034,8 +1073,16 @@ exports.assignStaff = async (req, res) => {
 exports.getStaffAssignments = async (req, res) => {
   try {
     const ownerId = req.userId;
-    const assignments = await StaffAssignment.find({ ownerId })
-      .populate('staffId', 'name phone')
+    const { staffId } = req.params;
+    const query = { ownerId };
+    
+    // If staffId is provided and it's not 'all' (in case the frontend uses a generic endpoint), filter by it.
+    if (staffId && staffId !== 'all') {
+      query.staffId = staffId;
+    }
+    
+    const assignments = await StaffAssignment.find(query)
+      .populate('staffId', 'name phone staffRole')
       .populate('busId', 'chassisNumber busName busNumber registrationNumber')
       .sort('-createdAt');
 

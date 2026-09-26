@@ -49,6 +49,7 @@ router.get('/buses/:busId/bookings/date/:date', busOwnerController.getBusBooking
 router.get('/staff', busOwnerController.getOwnerStaff);
 router.post('/staff', busOwnerController.createStaff);
 router.put('/staff/:staffId', busOwnerController.updateStaff);
+router.delete('/staff/:staffId', busOwnerController.deleteStaff);
 router.post('/staff/assign', busOwnerController.assignStaff);
 router.get('/staff/:staffId/assignments', busOwnerController.getStaffAssignments);
 router.put('/staff/:staffId/status', busOwnerController.updateStaffStatus);
