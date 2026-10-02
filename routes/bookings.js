@@ -28,126 +28,12 @@ const statusOrIdRouter = (req, res, next) => {
 };
 
 // Protected routes
-/**
- * @swagger
- * /api/bookings:
- *   post:
- *     summary: POST /api/bookings
- *     tags: [Bookings]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.post('/', auth.verifyToken, bookingController.createBooking);
-/**
- * @swagger
- * /api/bookings/lock-seats:
- *   post:
- *     summary: POST /api/bookings/lock-seats
- *     tags: [Bookings]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.post('/lock-seats', auth.verifyToken, bookingController.lockSeats);
-/**
- * @swagger
- * /api/bookings/{id}:
- *   get:
- *     summary: GET /api/bookings/{id}
- *     tags: [Bookings]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.get('/:id', auth.verifyToken, statusOrIdRouter);
-/**
- * @swagger
- * /api/bookings/user/{userId}:
- *   get:
- *     summary: GET /api/bookings/user/{userId}
- *     tags: [Bookings]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.get('/user/:userId', auth.verifyToken, bookingController.getUserBookings);
-/**
- * @swagger
- * /api/bookings/{id}/cancel:
- *   put:
- *     summary: PUT /api/bookings/{id}/cancel
- *     tags: [Bookings]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.put('/:id/cancel', auth.verifyToken, bookingController.cancelBooking);
-/**
- * @swagger
- * /api/bookings/{id}/qr-code:
- *   get:
- *     summary: GET /api/bookings/{id}/qr-code
- *     tags: [Bookings]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.get('/:id/qr-code', auth.verifyToken, bookingController.getQRCode);
-/**
- * @swagger
- * /api/bookings/{id}/panic:
- *   post:
- *     summary: POST /api/bookings/{id}/panic
- *     tags: [Bookings]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.post('/:id/panic', auth.verifyToken, bookingController.triggerPanic);
 
 module.exports = router;

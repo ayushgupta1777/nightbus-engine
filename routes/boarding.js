@@ -11,18 +11,6 @@ const auth = require('../middleware/auth');
  * Scan QR code and board passenger
  * Access: Staff, Owner
  */
-/**
- * @swagger
- * /api/boarding/scan-qr:
- *   post:
- *     summary: POST /api/boarding/scan-qr
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.post(
   '/scan-qr',
   auth.verifyToken,
@@ -35,18 +23,6 @@ router.post(
  * Verify exit OTP and complete journey segment
  * Access: Staff, Owner
  */
-/**
- * @swagger
- * /api/boarding/verify-exit-otp:
- *   post:
- *     summary: POST /api/boarding/verify-exit-otp
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.post(
   '/verify-exit-otp',
   auth.verifyToken,
@@ -58,18 +34,6 @@ router.post(
  * POST /api/boarding/manual-board
  * Manually board passenger without QR scan (emergency)
  * Access: Staff, Owner
- */
-/**
- * @swagger
- * /api/boarding/manual-board:
- *   post:
- *     summary: POST /api/boarding/manual-board
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
  */
 router.post(
   '/manual-board',
@@ -85,24 +49,6 @@ router.post(
  * Get today's passenger list for a bus
  * Access: Staff, Owner
  */
-/**
- * @swagger
- * /api/boarding/bus/{busId}/today:
- *   get:
- *     summary: GET /api/boarding/bus/{busId}/today
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: busId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.get(
   '/bus/:busId/today',
   auth.verifyToken,
@@ -115,24 +61,6 @@ router.get(
  * Get boarding statistics for a bus
  * Access: Staff, Owner
  */
-/**
- * @swagger
- * /api/boarding/bus/{busId}/stats:
- *   get:
- *     summary: GET /api/boarding/bus/{busId}/stats
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: busId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.get(
   '/bus/:busId/stats',
   auth.verifyToken,
@@ -144,24 +72,6 @@ router.get(
  * GET /api/boarding/status/:busId
  * Get current boarding status for a bus
  * Access: Authenticated users
- */
-/**
- * @swagger
- * /api/boarding/status/{busId}:
- *   get:
- *     summary: GET /api/boarding/status/{busId}
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: busId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Successful response
  */
 router.get(
   '/status/:busId',
@@ -177,24 +87,6 @@ router.get(
  * Access: Owner only
  * Body: { action: 'approve' | 'reject', reason?: string }
  */
-/**
- * @swagger
- * /api/boarding/segment/{segmentId}/approve:
- *   put:
- *     summary: PUT /api/boarding/segment/{segmentId}/approve
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: segmentId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.put(
   '/segment/:segmentId/approve',
   auth.verifyToken,
@@ -206,18 +98,6 @@ router.put(
  * GET /api/boarding/pending-approvals
  * Get all pending seat approval requests for owner
  * Access: Owner only
- */
-/**
- * @swagger
- * /api/boarding/pending-approvals:
- *   get:
- *     summary: GET /api/boarding/pending-approvals
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
  */
 router.get(
   '/pending-approvals',
@@ -231,18 +111,6 @@ router.get(
  * Bulk approve/reject multiple seat requests
  * Access: Owner only
  * Body: { segmentIds: string[], action: 'approve' | 'reject', reason?: string }
- */
-/**
- * @swagger
- * /api/boarding/bulk-approve:
- *   put:
- *     summary: PUT /api/boarding/bulk-approve
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
  */
 router.put(
   '/bulk-approve',
@@ -259,18 +127,6 @@ router.put(
  * Access: Staff, Owner
  * Body: { segmentId: string }
  */
-/**
- * @swagger
- * /api/boarding/generate-exit-otp:
- *   post:
- *     summary: POST /api/boarding/generate-exit-otp
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.post(
   '/generate-exit-otp',
   auth.verifyToken,
@@ -283,18 +139,6 @@ router.post(
  * Resend exit OTP to customer
  * Access: Staff, Owner
  * Body: { segmentId: string }
- */
-/**
- * @swagger
- * /api/boarding/resend-otp:
- *   post:
- *     summary: POST /api/boarding/resend-otp
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
  */
 router.post(
   '/resend-otp',
@@ -310,24 +154,6 @@ router.post(
  * Get all segments for a customer's journey
  * Access: Authenticated customer
  */
-/**
- * @swagger
- * /api/boarding/my-segments/{journeyId}:
- *   get:
- *     summary: GET /api/boarding/my-segments/{journeyId}
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: journeyId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.get(
   '/my-segments/:journeyId',
   auth.verifyToken,
@@ -338,24 +164,6 @@ router.get(
  * GET /api/boarding/segment/:segmentId
  * Get details of a specific segment
  * Access: Authenticated users
- */
-/**
- * @swagger
- * /api/boarding/segment/{segmentId}:
- *   get:
- *     summary: GET /api/boarding/segment/{segmentId}
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: segmentId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Successful response
  */
 router.get(
   '/segment/:segmentId',
@@ -370,24 +178,6 @@ router.get(
  * Get boarding analytics for a route
  * Access: Owner, Admin
  */
-/**
- * @swagger
- * /api/boarding/route/{routeId}/analytics:
- *   get:
- *     summary: GET /api/boarding/route/{routeId}/analytics
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: routeId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.get(
   '/route/:routeId/analytics',
   auth.verifyToken,
@@ -399,24 +189,6 @@ router.get(
  * GET /api/boarding/daily-report/:busId
  * Get daily boarding report for a bus
  * Access: Owner, Admin
- */
-/**
- * @swagger
- * /api/boarding/daily-report/{busId}:
- *   get:
- *     summary: GET /api/boarding/daily-report/{busId}
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: busId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Successful response
  */
 router.get(
   '/daily-report/:busId',
@@ -433,18 +205,6 @@ router.get(
  * Access: Staff, Owner
  * Body: { segmentId: string, reason: string }
  */
-/**
- * @swagger
- * /api/boarding/mark-no-show:
- *   post:
- *     summary: POST /api/boarding/mark-no-show
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.post(
   '/mark-no-show',
   auth.verifyToken,
@@ -457,18 +217,6 @@ router.post(
  * Emergency complete journey without OTP
  * Access: Owner, Admin only
  * Body: { segmentId: string, reason: string }
- */
-/**
- * @swagger
- * /api/boarding/emergency-complete:
- *   post:
- *     summary: POST /api/boarding/emergency-complete
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
  */
 router.post(
   '/emergency-complete',
@@ -484,18 +232,6 @@ router.post(
  * Validate QR code without boarding (for testing)
  * Access: Staff, Owner
  * Body: { qrData: string }
- */
-/**
- * @swagger
- * /api/boarding/validate-qr:
- *   post:
- *     summary: POST /api/boarding/validate-qr
- *     tags: [Boarding]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
  */
 router.post(
   '/validate-qr',

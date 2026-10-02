@@ -14,18 +14,6 @@ router.use(auth.protect);
  * @desc    Get wallet details and summary
  * @access  Private
  */
-/**
- * @swagger
- * /api/wallet:
- *   get:
- *     summary: GET /api/wallet
- *     tags: [Wallet]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.get('/', walletController.getWallet);
 
 /**
@@ -33,18 +21,6 @@ router.get('/', walletController.getWallet);
  * @desc    Get transaction history with pagination
  * @access  Private
  * @query   limit, page, type, status, startDate, endDate
- */
-/**
- * @swagger
- * /api/wallet/transactions:
- *   get:
- *     summary: GET /api/wallet/transactions
- *     tags: [Wallet]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
  */
 router.get('/transactions', walletController.getTransactions);
 
@@ -54,18 +30,6 @@ router.get('/transactions', walletController.getTransactions);
  * @access  Private
  * @query   period (day, week, month, year)
  */
-/**
- * @swagger
- * /api/wallet/stats:
- *   get:
- *     summary: GET /api/wallet/stats
- *     tags: [Wallet]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.get('/stats', walletController.getWalletStats);
 
 /**
@@ -74,18 +38,6 @@ router.get('/stats', walletController.getWalletStats);
  * @access  Private
  * @query   requiredAmount
  */
-/**
- * @swagger
- * /api/wallet/check-balance:
- *   get:
- *     summary: GET /api/wallet/check-balance
- *     tags: [Wallet]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.get('/check-balance', walletController.checkBalance);
 
 /**
@@ -93,18 +45,6 @@ router.get('/check-balance', walletController.checkBalance);
  * @desc    Add money to wallet
  * @access  Private
  * @body    amount, source, paymentMethod, idempotencyKey
- */
-/**
- * @swagger
- * /api/wallet/add-money:
- *   post:
- *     summary: POST /api/wallet/add-money
- *     tags: [Wallet]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
  */
 router.post(
   '/add-money',
@@ -118,18 +58,6 @@ router.post(
  * @access  Private/Admin
  * @body    amount, bookingId, reason, idempotencyKey
  */
-/**
- * @swagger
- * /api/wallet/refund:
- *   post:
- *     summary: POST /api/wallet/refund
- *     tags: [Wallet]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.post('/refund', walletController.refundToWallet);
 
 /**
@@ -137,18 +65,6 @@ router.post('/refund', walletController.refundToWallet);
  * @desc    Transfer money to another user (P2P)
  * @access  Private
  * @body    recipientUserId, amount, note, idempotencyKey
- */
-/**
- * @swagger
- * /api/wallet/transfer:
- *   post:
- *     summary: POST /api/wallet/transfer
- *     tags: [Wallet]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
  */
 router.post(
   '/transfer',
@@ -161,36 +77,12 @@ router.post(
  * @desc    Request payout to bank details
  * @access  Private
  */
-/**
- * @swagger
- * /api/wallet/payout-request:
- *   post:
- *     summary: POST /api/wallet/payout-request
- *     tags: [Wallet]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
- */
 router.post('/payout-request', walletController.requestPayout);
 
 /**
  * @route   GET /api/wallet/payouts
  * @desc    Get user payouts/settlements
  * @access  Private
- */
-/**
- * @swagger
- * /api/wallet/payouts:
- *   get:
- *     summary: GET /api/wallet/payouts
- *     tags: [Wallet]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful response
  */
 router.get('/payouts', walletController.getUserPayouts);
 
