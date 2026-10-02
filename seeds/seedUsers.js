@@ -9,9 +9,9 @@ const User = require('../models/User');
 
 const dummyUsers = [
   {
-    phone: '9876543210',
+    phone: '9876500001',
     name: 'Customer Test',
-    email: 'customer@test.com',
+    email: 'customer_v2@test.com',
     role: 'customer',
     age: 28,
     gender: 'male',
@@ -21,9 +21,9 @@ const dummyUsers = [
     isActive: true
   },
   {
-    phone: '8765432109',
+    phone: '8765400001',
     name: 'Bus Owner Test',
-    email: 'owner@test.com',
+    email: 'owner_v2@test.com',
     role: 'owner',
     age: 35,
     gender: 'male',
@@ -38,9 +38,9 @@ const dummyUsers = [
     }
   },
   {
-    phone: '7654321098',
+    phone: '7654300001',
     name: 'Staff Member Test',
-    email: 'staff@test.com',
+    email: 'staff_v2@test.com',
     role: 'staff',
     age: 32,
     gender: 'female',
@@ -50,9 +50,9 @@ const dummyUsers = [
     isActive: true
   },
   {
-    phone: '6543210987',
+    phone: '6543200001',
     name: 'Vendor Test',
-    email: 'vendor@test.com',
+    email: 'vendor_v2@test.com',
     role: 'vendor',
     age: 40,
     gender: 'male',
@@ -67,9 +67,9 @@ const dummyUsers = [
     }
   },
   {
-    phone: '5432109876',
+    phone: '5432100001',
     name: 'Admin Test',
-    email: 'admin@test.com',
+    email: 'admin_v2@test.com',
     role: 'admin',
     age: 45,
     gender: 'male',

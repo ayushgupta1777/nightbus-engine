@@ -87,22 +87,22 @@ router.post('/register', authController.register);
  *             admin:
  *               summary: Admin login (Requires password to be set)
  *               value:
- *                 email: "admin@test.com"
+ *                 email: "admin_v2@test.com"
  *                 password: "password123"
  *             owner:
  *               summary: Bus Owner login
  *               value:
- *                 email: "owner@test.com"
+ *                 email: "owner_v2@test.com"
  *                 password: "password123"
  *             staff:
  *               summary: Staff login
  *               value:
- *                 email: "staff@test.com"
+ *                 email: "staff_v2@test.com"
  *                 password: "password123"
  *             customer:
  *               summary: Customer login
  *               value:
- *                 email: "customer@test.com"
+ *                 email: "customer_v2@test.com"
  *                 password: "password123"
  *     responses:
  *       200:
@@ -146,27 +146,27 @@ router.post('/login', authController.login);
  *             customer:
  *               summary: Customer Login (Seed Data)
  *               value:
- *                 phone: "9876543210"
+ *                 phone: "9876500001"
  *                 otp: "123456"
  *             owner:
  *               summary: Bus Owner Login (Seed Data)
  *               value:
- *                 phone: "8765432109"
+ *                 phone: "8765400001"
  *                 otp: "123456"
  *             staff:
  *               summary: Staff Login (Seed Data)
  *               value:
- *                 phone: "7654321098"
+ *                 phone: "7654300001"
  *                 otp: "123456"
  *             vendor:
  *               summary: Vendor Login (Seed Data)
  *               value:
- *                 phone: "6543210987"
+ *                 phone: "6543200001"
  *                 otp: "123456"
  *             admin:
  *               summary: Admin Login (Seed Data)
  *               value:
- *                 phone: "5432109876"
+ *                 phone: "5432100001"
  *                 otp: "123456"
  *     responses:
  *       200:
