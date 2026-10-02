@@ -29,6 +29,10 @@ app.use(morgan('combined'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Swagger Documentation setup
+const setupSwagger = require('./config/swagger');
+setupSwagger(app);
+
 // Rate Limiting — protect all API routes
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

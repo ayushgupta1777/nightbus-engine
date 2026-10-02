@@ -1,4 +1,37 @@
 // ==================== models/User.js ====================
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       required:
+ *         - phone
+ *         - name
+ *       properties:
+ *         phone:
+ *           type: string
+ *           description: The user's phone number
+ *         name:
+ *           type: string
+ *           description: The user's full name
+ *         email:
+ *           type: string
+ *           description: The user's email address
+ *         role:
+ *           type: string
+ *           enum: [customer, owner, staff, vendor, admin]
+ *           description: The role of the user
+ *         age:
+ *           type: number
+ *         gender:
+ *           type: string
+ *           enum: [male, female, other]
+ *         isActive:
+ *           type: boolean
+ *         isVerified:
+ *           type: boolean
+ */
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 

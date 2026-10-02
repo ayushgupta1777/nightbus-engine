@@ -31,6 +31,8 @@
     "nodemailer": "^8.0.5",
     "razorpay": "^2.9.6",
     "socket.io": "^4.5.4",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

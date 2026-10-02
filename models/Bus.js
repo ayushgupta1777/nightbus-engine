@@ -1,4 +1,41 @@
 // ==================== models/Bus.js ====================
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Bus:
+ *       type: object
+ *       required:
+ *         - ownerId
+ *         - chassisNumber
+ *         - totalSeats
+ *         - registrationNumber
+ *       properties:
+ *         ownerId:
+ *           type: string
+ *           description: The ID of the owner
+ *         chassisNumber:
+ *           type: string
+ *           description: 17-character alphanumeric Chassis Number
+ *         busType:
+ *           type: string
+ *           enum: ['AC', 'Non-AC', 'Sleeper', 'Seater', 'Semi-Sleeper', 'AC Sleeper', 'AC Seater', 'Non-AC Seater']
+ *         totalSeats:
+ *           type: number
+ *         registrationNumber:
+ *           type: string
+ *         busNumber:
+ *           type: string
+ *         isActive:
+ *           type: boolean
+ *         status:
+ *           type: string
+ *           enum: ['available', 'in-service', 'maintenance', 'inactive', 'breakdown']
+ *         amenities:
+ *           type: array
+ *           items:
+ *             type: string
+ */
 const mongoose = require('mongoose');
 
 const busSchema = new mongoose.Schema({
