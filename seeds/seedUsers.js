@@ -17,6 +17,7 @@ const dummyUsers = [
     gender: 'male',
     language: 'en',
     isVerified: true,
+    password: 'password123',
     isActive: true
   },
   {
@@ -28,6 +29,7 @@ const dummyUsers = [
     gender: 'male',
     language: 'en',
     isVerified: true,
+    password: 'password123',
     isActive: true,
     companyProfile: {
       companyName: 'Test Bus Company',
@@ -44,6 +46,7 @@ const dummyUsers = [
     gender: 'female',
     language: 'hi',
     isVerified: true,
+    password: 'password123',
     isActive: true
   },
   {
@@ -55,6 +58,7 @@ const dummyUsers = [
     gender: 'male',
     language: 'en',
     isVerified: true,
+    password: 'password123',
     isActive: true,
     companyProfile: {
       companyName: 'Test Vendor Services',
@@ -71,6 +75,7 @@ const dummyUsers = [
     gender: 'male',
     language: 'en',
     isVerified: true,
+    password: 'password123',
     isActive: true
   },
   // Additional test users for each role
@@ -83,6 +88,7 @@ const dummyUsers = [
     gender: 'female',
     language: 'en',
     isVerified: true,
+    password: 'password123',
     isActive: true
   },
   {
@@ -94,6 +100,7 @@ const dummyUsers = [
     gender: 'female',
     language: 'hi',
     isVerified: true,
+    password: 'password123',
     isActive: true,
     companyProfile: {
       companyName: 'Premium Transport',
@@ -117,7 +124,7 @@ const seedDatabase = async () => {
     // console.log('🗑️  Cleared existing users');
 
     // Insert dummy users
-    const createdUsers = await User.insertMany(dummyUsers, { ordered: false });
+    const createdUsers = await User.create(dummyUsers);
     console.log(`✅ Created ${createdUsers.length} dummy users`);
 
     // Display created users
