@@ -15,10 +15,13 @@ const swaggerOptions = {
     },
     servers: [
       {
+        url: 'https://server.nightbusjourney.com',
+        description: 'Production Server',
+      },
+      {
         url: 'http://localhost:5000',
         description: 'Local Development Server',
       },
-      // You can add production server URLs here later
     ],
     components: {
       securitySchemes: {
