@@ -45,7 +45,7 @@ routeMounts.forEach(mount => {
   
   let content = fs.readFileSync(filePath, 'utf8');
   
-  const routeRegex = /router\.(get|post|put|delete|patch)\s*\(\s*['"`](.*?)['"`]/g;
+  const routeRegex = /^[ \t]*router\.(get|post|put|delete|patch)\s*\(\s*['"`](.*?)['"`]/gm;
   let modifications = [];
   let routeMatch;
   
