@@ -5,9 +5,57 @@ const authController = require('../controllers/authController');
 const auth = require('../middleware/auth');
 
 // Public routes
+/**
+ * @swagger
+ * /api/auth/send-otp:
+ *   post:
+ *     summary: POST /api/auth/send-otp
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 router.post('/send-otp', authController.sendOTP);
+/**
+ * @swagger
+ * /api/auth/send-email-otp:
+ *   post:
+ *     summary: POST /api/auth/send-email-otp
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 router.post('/send-email-otp', authController.sendEmailOTP);
+/**
+ * @swagger
+ * /api/auth/verify-email-otp:
+ *   post:
+ *     summary: POST /api/auth/verify-email-otp
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 router.post('/verify-email-otp', authController.verifyEmailOTP);
+/**
+ * @swagger
+ * /api/auth/verify-otp:
+ *   post:
+ *     summary: POST /api/auth/verify-otp
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 router.post('/verify-otp', authController.verifyOTP);
 /**
  * @swagger
@@ -59,6 +107,18 @@ router.post('/verify-otp', authController.verifyOTP);
  *         description: User registered successfully
  *       400:
  *         description: Bad request
+ */
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: POST /api/auth/register
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successful response
  */
 router.post('/register', authController.register);
 
@@ -119,6 +179,18 @@ router.post('/register', authController.register);
  *       401:
  *         description: Invalid credentials
  */
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: POST /api/auth/login
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 router.post('/login', authController.login);
 
 /**
@@ -172,6 +244,18 @@ router.post('/login', authController.login);
  *       200:
  *         description: OTP verified successfully
  */
+/**
+ * @swagger
+ * /api/auth/verify-otp:
+ *   post:
+ *     summary: POST /api/auth/verify-otp
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 router.post('/verify-otp', authController.verifyOTP);
 
 /**
@@ -211,11 +295,59 @@ router.post('/verify-otp', authController.verifyOTP);
  *       200:
  *         description: Test Login successful
  */
+/**
+ * @swagger
+ * /api/auth/test-login:
+ *   post:
+ *     summary: POST /api/auth/test-login
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 router.post('/test-login', authController.testLogin);
 
 // Protected routes
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: GET /api/auth/me
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 router.get('/me', auth.verifyToken, authController.getCurrentUser);
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   put:
+ *     summary: PUT /api/auth/profile
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 router.put('/profile', auth.verifyToken, authController.updateProfile);
+/**
+ * @swagger
+ * /api/auth/fcm-token:
+ *   post:
+ *     summary: POST /api/auth/fcm-token
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 router.post('/fcm-token', auth.verifyToken, authController.updateFCMToken);
 
 module.exports = router;
