@@ -95,7 +95,7 @@ app.use('/api/admin', adminRoutes);
 app.post('/api/telemetry', telemetryController.receiveTelemetry);
 app.get('/api/telemetry/:busId', telemetryController.getBusHistory);
 
-// app.use('/api/bus-owner', require('./routes/busOwner'));
+app.use('/api/bus-owner', require('./routes/busOwner'));
 app.use('/api/owner', require('./routes/busOwner'));
 app.use('/api/tracking', require('./routes/trackingRoutes'));
 
