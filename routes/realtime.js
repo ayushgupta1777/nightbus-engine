@@ -13,6 +13,12 @@ const auth = require('../middleware/auth');
  *     tags: [Realtime]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -26,6 +32,12 @@ router.post('/booking-confirmed', auth.verifyToken, realtimeController.notifyBoo
  *     tags: [Realtime]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -39,6 +51,12 @@ router.post('/bus-location', auth.verifyToken, auth.checkRole('owner'), realtime
  *     tags: [Realtime]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

@@ -40,6 +40,12 @@ router.get('/ping', (req, res) => res.json({ success: true, message: 'Owner API 
  *     tags: [Bus-owner]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -146,6 +152,12 @@ router.get('/buses/:busId', busOwnerController.getBusDetails);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -164,6 +176,12 @@ router.get('/buses/:busId', busOwnerController.getBusDetails);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -220,6 +238,12 @@ router.delete('/buses/:busId', busOwnerController.deleteBus);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -238,6 +262,12 @@ router.delete('/buses/:busId', busOwnerController.deleteBus);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -327,6 +357,12 @@ router.get('/buses/:busId/history', busOwnerController.getBusTripHistory);
  *     tags: [Bus-owner]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -396,6 +432,12 @@ router.get('/routes/:routeId/details', busOwnerController.getRouteDetails);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -414,6 +456,12 @@ router.get('/routes/:routeId/details', busOwnerController.getRouteDetails);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -433,6 +481,12 @@ router.put('/routes/:routeId', busOwnerController.updateRoute);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -451,6 +505,12 @@ router.put('/routes/:routeId', busOwnerController.updateRoute);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -470,6 +530,12 @@ router.put('/routes/:routeId/status', busOwnerController.updateRouteStatus);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -488,6 +554,12 @@ router.put('/routes/:routeId/status', busOwnerController.updateRouteStatus);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -559,6 +631,12 @@ router.get('/pending-approvals', busOwnerController.getPendingApprovals);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -577,6 +655,12 @@ router.get('/pending-approvals', busOwnerController.getPendingApprovals);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -596,6 +680,12 @@ router.put('/segments/:segmentId/approve', busOwnerController.approveBooking);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -614,6 +704,12 @@ router.put('/segments/:segmentId/approve', busOwnerController.approveBooking);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -689,6 +785,12 @@ router.get('/staff', busOwnerController.getOwnerStaff);
  *     tags: [Bus-owner]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -708,6 +810,12 @@ router.post('/staff', busOwnerController.createStaff);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -726,6 +834,12 @@ router.post('/staff', busOwnerController.createStaff);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -776,6 +890,12 @@ router.delete('/staff/:staffId', busOwnerController.deleteStaff);
  *     tags: [Bus-owner]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -832,6 +952,12 @@ router.get('/staff/:staffId/assignments', busOwnerController.getStaffAssignments
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -850,6 +976,12 @@ router.get('/staff/:staffId/assignments', busOwnerController.getStaffAssignments
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -917,6 +1049,12 @@ router.get('/settlements', busOwnerController.getSettlements);
  *     tags: [Bus-owner]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -936,6 +1074,12 @@ router.post('/wallet/withdraw', busOwnerController.requestWithdrawal);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -954,6 +1098,12 @@ router.post('/wallet/withdraw', busOwnerController.requestWithdrawal);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -973,6 +1123,12 @@ router.put('/bookings/:id/cancel-approve', busOwnerController.approveCancellatio
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -991,6 +1147,12 @@ router.put('/bookings/:id/cancel-approve', busOwnerController.approveCancellatio
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -1032,6 +1194,12 @@ router.get('/settings', busOwnerController.getOwnerSettings);
  *     tags: [Bus-owner]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -1047,6 +1215,12 @@ router.put('/settings', busOwnerController.updateOwnerSettings);
  *     tags: [Bus-owner]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

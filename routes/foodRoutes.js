@@ -65,6 +65,12 @@ router.get('/vendors', getVendors);
  *     tags: [Food]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -116,6 +122,12 @@ router.get('/orders/:id', getFoodOrderDetails);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -131,6 +143,12 @@ router.put('/orders/:id/cancel', cancelOrderUser);
  *     tags: [Food]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -157,6 +175,12 @@ router.get('/vendor/items', getVendorItems);
  *     tags: [Food]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -176,6 +200,12 @@ router.post('/vendor/items', addVendorItem);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -222,6 +252,12 @@ router.get('/vendor/orders', getVendorOrders);
  *     tags: [Food]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -248,6 +284,12 @@ router.get('/vendor/profile', getFoodVendorProfile);
  *     tags: [Food]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -261,6 +303,12 @@ router.put('/vendor/profile', updateFoodVendorProfile);
  *     tags: [Food]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -293,6 +341,12 @@ router.get('/vendor/stats', getVendorDashboardStats);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

@@ -52,6 +52,12 @@ router.get('/admin', protect, getAdminHomeContent);
  *     tags: [Home-content]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -65,6 +71,12 @@ router.post('/upload', protect, upload.single('image'), require('../controllers/
  *     tags: [Home-content]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -84,6 +96,12 @@ router.post('/banners', protect, createBanner);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -116,6 +134,12 @@ router.delete('/banners/:id', protect, deleteBanner);
  *     tags: [Home-content]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -135,6 +159,12 @@ router.post('/featured', protect, createFeaturedDestination);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -169,6 +199,12 @@ router.delete('/featured/:id', protect, deleteFeaturedDestination);
  *     tags: [Home-content]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -188,6 +224,12 @@ router.post('/ads', protect, createAdBanner);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

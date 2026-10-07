@@ -42,6 +42,12 @@ router.get('/popular', locationController.getPopularLocations);
  *     tags: [Locations]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -57,6 +63,12 @@ router.post('/', auth.protect, locationController.createLocation);
  *     tags: [Locations]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -111,6 +123,12 @@ router.get('/google-geocode', locationController.googleReverseGeocode);
  *     tags: [Locations]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -124,6 +142,12 @@ router.post('/google-route', locationController.googleRoute);
  *     tags: [Locations]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -139,6 +163,12 @@ router.post('/google-roads', locationController.googleRoads);
  *     tags: [Locations]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

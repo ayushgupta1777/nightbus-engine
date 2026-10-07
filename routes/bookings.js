@@ -36,6 +36,12 @@ const statusOrIdRouter = (req, res, next) => {
  *     tags: [Bookings]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -49,6 +55,12 @@ router.post('/', auth.verifyToken, bookingController.createBooking);
  *     tags: [Bookings]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -106,6 +118,12 @@ router.get('/user/:userId', auth.verifyToken, bookingController.getUserBookings)
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -144,6 +162,12 @@ router.get('/:id/qr-code', auth.verifyToken, bookingController.getQRCode);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

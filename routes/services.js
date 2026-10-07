@@ -66,6 +66,12 @@ router.get('/:id', serviceController.getServiceById);
  *     tags: [Services]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -85,6 +91,12 @@ router.post('/', auth.verifyToken, auth.checkRole('vendor'), serviceController.c
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

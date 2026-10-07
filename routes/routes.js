@@ -66,6 +66,12 @@ router.get('/schedule/:routeId', routeController.getSchedule);
  *     tags: [Routes]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -85,6 +91,12 @@ router.post('/', auth.verifyToken, auth.checkRole('owner'), routeController.crea
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -104,6 +116,12 @@ router.put('/:id', auth.verifyToken, auth.checkRole('owner'), routeController.up
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -142,6 +160,12 @@ router.delete('/:id', auth.verifyToken, auth.checkRole('owner'), routeController
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

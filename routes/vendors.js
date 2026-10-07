@@ -60,6 +60,12 @@ router.get('/profile', auth.verifyToken, auth.checkRole('vendor'), vendorControl
  *     tags: [Vendors]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -117,6 +123,12 @@ router.get('/orders/:vendorId', auth.verifyToken, auth.checkRole('vendor'), vend
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -149,6 +161,12 @@ router.get('/items/:vendorId', auth.verifyToken, auth.checkRole('vendor'), vendo
  *     tags: [Vendors]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

@@ -25,6 +25,12 @@ router.get('/active', tripController.getActiveTrip);
  *     tags: [Trips]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -38,6 +44,12 @@ router.post('/start', tripController.startTrip);
  *     tags: [Trips]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

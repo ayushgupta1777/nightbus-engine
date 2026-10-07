@@ -13,6 +13,12 @@ const { protect } = require('../middleware/auth'); // Assuming this exists for a
  *     tags: [Payment]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -28,6 +34,12 @@ router.post('/create-order', protect, paymentController.createOrder);
  *     tags: [Payment]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -43,6 +55,12 @@ router.post('/verify', protect, paymentController.verifyPayment);
  *     tags: [Payment]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

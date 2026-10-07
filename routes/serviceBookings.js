@@ -13,6 +13,12 @@ const auth = require('../middleware/auth');
  *     tags: [Service-bookings]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -70,6 +76,12 @@ router.get('/customer/:customerId', auth.verifyToken, serviceBookingController.g
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -89,6 +101,12 @@ router.put('/:id/cancel', auth.verifyToken, serviceBookingController.cancelServi
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

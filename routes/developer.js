@@ -101,6 +101,12 @@ router.get('/analytics', developerController.getAnalytics);
  *     tags: [Developer]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -115,6 +121,12 @@ router.post('/analytics/pageview', developerController.postAnalytics);
  *     tags: [Developer]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -128,6 +140,12 @@ router.post('/login', developerController.login);
  *     tags: [Developer]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -155,6 +173,12 @@ router.get('/health', developerController.getHealth);
  *     tags: [Developer]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -169,6 +193,12 @@ router.post('/crash-report', developerController.postCrashReport);
  *     tags: [Developer]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

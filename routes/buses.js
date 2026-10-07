@@ -66,6 +66,12 @@ router.get('/:id/seats', busController.getBusSeats);
  *     tags: [Buses]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -85,6 +91,12 @@ router.post('/', auth.verifyToken, auth.checkRole('owner'), busController.create
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -123,6 +135,12 @@ router.delete('/:id', auth.verifyToken, auth.checkRole('owner'), busController.d
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

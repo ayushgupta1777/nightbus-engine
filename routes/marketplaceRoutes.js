@@ -46,6 +46,12 @@ router.get('/services/search', searchServices);
  *     tags: [Marketplace]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -61,6 +67,12 @@ router.post('/requests', createServiceRequest);
  *     tags: [Marketplace]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -74,6 +86,12 @@ router.post('/provider/register', registerProvider);
  *     tags: [Marketplace]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -87,6 +105,12 @@ router.post('/provider/upload-license', upload.single('licenseImage'), uploadLic
  *     tags: [Marketplace]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -100,6 +124,12 @@ router.post('/provider/upload-fitness', upload.single('fitnessImage'), uploadFit
  *     tags: [Marketplace]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -113,6 +143,12 @@ router.post('/provider/upload-insurance', upload.single('insuranceImage'), uploa
  *     tags: [Marketplace]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -152,6 +188,12 @@ router.get('/provider/profile', getMyProviderProfile);
  *     tags: [Marketplace]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -165,6 +207,12 @@ router.put('/provider/coverage', updateProviderCoverage);
  *     tags: [Marketplace]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -178,6 +226,12 @@ router.put('/provider/status', toggleProviderStatus);
  *     tags: [Marketplace]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -212,6 +266,12 @@ router.get('/admin/providers', getAllProviders);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

@@ -13,6 +13,12 @@ const auth = require('../middleware/auth');
  *     tags: [Journeys]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -26,6 +32,12 @@ router.post('/search', journeyController.searchJourneys);
  *     tags: [Journeys]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -39,6 +51,12 @@ router.post('/calculate-price', journeyController.calculatePrice);
  *     tags: [Journeys]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -52,6 +70,12 @@ router.post('/booked-seats', journeyController.getBookedSeats);
  *     tags: [Journeys]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

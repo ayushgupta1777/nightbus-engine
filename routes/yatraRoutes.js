@@ -65,6 +65,12 @@ router.get('/packages/:id', yatraController.getPackageDetails);
  *     tags: [Yatra]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -116,6 +122,12 @@ router.get('/bookings/:id', yatraController.getBookingDetails);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -131,6 +143,12 @@ router.put('/bookings/:id/cancel', yatraController.cancelBooking);
  *     tags: [Yatra]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -144,6 +162,12 @@ router.post('/owner/packages/upload-images', upload.array('images', 5), yatraCon
  *     tags: [Yatra]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -176,6 +200,12 @@ router.get('/owner/packages', yatraController.getOwnerPackages);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -195,6 +225,12 @@ router.put('/owner/packages/:id', yatraController.updatePackage);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -214,6 +250,12 @@ router.put('/owner/packages/:id/complete', yatraController.completeYatra);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

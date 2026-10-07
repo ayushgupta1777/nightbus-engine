@@ -85,6 +85,12 @@ router.get('/:id', auth.verifyToken, notificationController.getNotificationById)
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -117,6 +123,12 @@ router.delete('/:id', auth.verifyToken, notificationController.deleteNotificatio
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -130,6 +142,12 @@ router.post('/send', auth.verifyToken, auth.checkRole(['admin', 'owner']), notif
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -145,6 +163,12 @@ router.post('/test-push', auth.verifyToken, notificationController.testPush);
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -158,6 +182,12 @@ router.post('/bus-location-update', auth.verifyToken, notificationController.bus
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -171,6 +201,12 @@ router.post('/bus-delay-notification', auth.verifyToken, notificationController.
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -184,6 +220,12 @@ router.post('/booking-confirmation', auth.verifyToken, notificationController.bo
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response

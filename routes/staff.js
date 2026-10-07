@@ -63,6 +63,12 @@ router.get('/active-incidents', staffController.getActiveIncidents);
  *     tags: [Staff]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -76,6 +82,12 @@ router.post('/verify-boarding', staffController.verifyBoarding);
  *     tags: [Staff]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -89,6 +101,12 @@ router.post('/verify-drop', staffController.verifyDrop);
  *     tags: [Staff]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
@@ -102,6 +120,12 @@ router.post('/update-position', staffController.updatePosition);
  *     tags: [Staff]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       200:
  *         description: Successful response
