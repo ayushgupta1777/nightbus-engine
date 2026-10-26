@@ -11,6 +11,8 @@ describe('Flexible Rental Matching Logic Unit Tests', () => {
 
   beforeEach(() => {
     process.env = { ...originalEnv };
+    process.env.MATCHING_MIN_CAPACITY_RATIO = '0.85';
+    process.env.MATCHING_MIN_FILL_RATIO = '0.60';
   });
 
   afterAll(() => {

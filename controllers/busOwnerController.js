@@ -1058,6 +1058,14 @@ exports.assignStaff = async (req, res) => {
     // 4. Update User model shortcuts and permissions
     staff.assignedBus = busId;
     staff.staffRole = role;
+    staff.currentAssignment = {
+      busId,
+      role,
+      shiftDate: shiftDate ? new Date(shiftDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      shiftStartTime: shiftStartTime || '06:00',
+      shiftEndTime: shiftEndTime || '18:00',
+      assignedAt: new Date()
+    };
     if (permissions) {
       staff.set('permissions', permissions);
       staff.markModified('permissions');

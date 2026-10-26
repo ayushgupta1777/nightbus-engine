@@ -39,7 +39,11 @@ describe('Bus Owner Controller - Integration Tests', () => {
         totalSeats: 20,
         registrationNumber: 'TN01AB1234',
         insurancePolicyNumber: 'INS123',
+        insuranceIssueDate: new Date(),
+        insuranceExpiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         permitNumber: 'PERM123',
+        permitIssueDate: new Date(),
+        permitExpiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         fitnessNumber: 'FIT123',
       };
 
@@ -95,7 +99,11 @@ describe('Bus Owner Controller - Integration Tests', () => {
         totalSeats: 2,
         registrationNumber: 'TN01AB1236',
         insurancePolicyNumber: 'INS123',
+        insuranceIssueDate: new Date(),
+        insuranceExpiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         permitNumber: 'PERM123',
+        permitIssueDate: new Date(),
+        permitExpiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         fitnessNumber: 'FIT123',
         seatConfiguration: customSeats
       };

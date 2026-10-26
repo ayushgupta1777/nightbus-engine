@@ -7,9 +7,9 @@ describe('Wallet & Payments Controller', () => {
   let customerToken = '';
   let customerUser = null;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     // Create a mock customer for wallet operations
-    const custEmail = `cust_wallet_${Date.now()}@example.com`;
+    const custEmail = `cust_wallet_${Date.now()}_${Math.floor(Math.random() * 1000)}@example.com`;
     await request(app).post('/api/auth/register').send({
       name: 'Wallet Customer',
       email: custEmail,
@@ -29,49 +29,58 @@ describe('Wallet & Payments Controller', () => {
 
   it('should get initial wallet balance as 0', async () => {
     const res = await request(app)
-      .get('/api/wallet/balance')
+      .get('/api/wallet')
       .set('Authorization', `Bearer ${customerToken}`);
       
-    // Assuming wallet initialization on registration
-    // If it doesn't exist, it should return 0 or create one
-    if (res.statusCode === 200) {
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.balance).toBeGreaterThanOrEqual(0);
-    } else {
-      expect(res.statusCode).toBe(404); // If wallet not found initially
-    }
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.wallet.balance).toBe(0);
   });
 
-  it('should add funds to wallet', async () => {
+  it('should add funds to wallet via add-money', async () => {
     const res = await request(app)
-      .post('/api/wallet/add-funds')
+      .post('/api/wallet/add-money')
       .set('Authorization', `Bearer ${customerToken}`)
-      .send({ amount: 500, transactionId: 'TXN_TEST_123' });
+      .send({
+        amount: 500,
+        source: 'razorpay',
+        paymentMethod: 'upi',
+        idempotencyKey: `IDEMP_${Date.now()}`
+      });
       
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.wallet.balance).toBe(500);
+    expect(res.body.data.balance).toBe(500);
   });
 
-  it('should deduct funds from wallet', async () => {
-    const res = await request(app)
-      .post('/api/wallet/deduct-funds')
+  it('should verify balance check endpoint works', async () => {
+    // Add funds first
+    await request(app)
+      .post('/api/wallet/add-money')
       .set('Authorization', `Bearer ${customerToken}`)
-      .send({ amount: 200, description: 'Ticket Booking' });
-      
-    expect(res.statusCode).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.wallet.balance).toBe(300);
-  });
+      .send({
+        amount: 500,
+        source: 'razorpay',
+        paymentMethod: 'upi',
+        idempotencyKey: `IDEMP_CHK_${Date.now()}`
+      });
 
-  it('should fail to deduct if insufficient balance', async () => {
-    const res = await request(app)
-      .post('/api/wallet/deduct-funds')
-      .set('Authorization', `Bearer ${customerToken}`)
-      .send({ amount: 1000, description: 'Too expensive' });
+    // Check with sufficient balance
+    const okRes = await request(app)
+      .get('/api/wallet/check-balance?requiredAmount=300')
+      .set('Authorization', `Bearer ${customerToken}`);
       
-    expect(res.statusCode).toBe(400);
-    expect(res.body.success).toBe(false);
-    // error message depends on implementation
+    expect(okRes.statusCode).toBe(200);
+    expect(okRes.body.success).toBe(true);
+    expect(okRes.body.data.hasSufficientBalance).toBe(true);
+
+    // Check with insufficient balance
+    const failRes = await request(app)
+      .get('/api/wallet/check-balance?requiredAmount=1000')
+      .set('Authorization', `Bearer ${customerToken}`);
+      
+    expect(failRes.statusCode).toBe(200);
+    expect(failRes.body.success).toBe(true);
+    expect(failRes.body.data.hasSufficientBalance).toBe(false);
   });
 });

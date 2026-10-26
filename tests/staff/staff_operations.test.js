@@ -12,7 +12,7 @@ describe('Staff Operations Controller', () => {
   let testBus = null;
   let testTrip = null;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     // Note: Depends on mongodb-memory-server running
     const busOwnerId = new mongoose.Types.ObjectId();
     
@@ -25,7 +25,7 @@ describe('Staff Operations Controller', () => {
       ownerId: busOwnerId,
     });
 
-    const staffEmail = `staff_ops_${Date.now()}@example.com`;
+    const staffEmail = `staff_ops_${Date.now()}_${Math.random()}@example.com`;
     await request(app).post('/api/auth/register').send({
       name: 'Ops Staff',
       email: staffEmail,
@@ -52,8 +52,20 @@ describe('Staff Operations Controller', () => {
       status: 'scheduled',
       serviceDate: new Date(),
       stops: [
-        { name: 'Stop A', scheduledArrival: new Date(), sequence: 0 },
-        { name: 'Stop B', scheduledArrival: new Date(), sequence: 1 }
+        { 
+          stopId: new mongoose.Types.ObjectId(), 
+          name: 'Stop A', 
+          order: 0, 
+          coordinates: { latitude: 22.7196, longitude: 75.8577 }, 
+          scheduledArrival: new Date() 
+        },
+        { 
+          stopId: new mongoose.Types.ObjectId(), 
+          name: 'Stop B', 
+          order: 1, 
+          coordinates: { latitude: 22.7500, longitude: 75.8900 }, 
+          scheduledArrival: new Date() 
+        }
       ]
     });
   });
@@ -107,6 +119,12 @@ describe('Staff Operations Controller', () => {
     // Create a mock segment to test manifest
     await Segment.create({
       busId: testBus._id,
+      routeId: testTrip.routeId,
+      journeyId: new mongoose.Types.ObjectId(),
+      customerId: new mongoose.Types.ObjectId(),
+      passengerDetails: { name: 'Test Passenger', age: 28, gender: 'male' },
+      price: 500,
+      totalAmount: 500,
       travelDate: new Date(),
       status: 'confirmed',
       fromStop: { name: 'Stop A' },

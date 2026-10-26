@@ -242,7 +242,7 @@ exports.verifyOTP = async (req, res) => {
 // Register
 exports.register = async (req, res) => {
   try {
-    const { phone, name, email, password, role = 'customer', fcmToken, isServiceProvider, serviceType, isFoodVendor, companyProfile, kycDetails } = req.body;
+    const { phone, name, email, password, role = 'customer', fcmToken, isServiceProvider, serviceType, isFoodVendor, companyProfile, kycDetails, ownerId, createdByOwnerId, staffRole } = req.body;
 
     if (!phone || !name || !email || !password) {
       return res.status(400).json({ success: false, message: 'All fields (name, email, phone, password) are required' });
@@ -274,6 +274,8 @@ exports.register = async (req, res) => {
       role, 
       isVerified: true, 
       fcmToken,
+      ownerId: ownerId || createdByOwnerId || undefined,
+      staffRole: staffRole || undefined,
       isServiceProvider: isServiceProvider || false,
       serviceType: serviceType || undefined,
       isFoodVendor: isFoodVendor || (role === 'vendor'),

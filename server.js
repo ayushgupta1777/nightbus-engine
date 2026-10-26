@@ -20,7 +20,9 @@ const io = socketIO(server, {
 });
 
 // Middleware #87967
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
 app.use(cors());
 app.use(express.json({ limit: '10mb', verify: (req, res, buf) => { req.rawBody = buf; } }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -215,12 +217,14 @@ server.on('error', (err) => {
 
 
 
-// Initialize background jobs
-const { initAutoCancelJob } = require('./services/autoCancelService');
-const { initAutoCompleteJob } = require('./services/autoCompleteService');
+// Initialize background jobs only in non-test environments
+if (process.env.NODE_ENV !== 'test') {
+  const { initAutoCancelJob } = require('./services/autoCancelService');
+  const { initAutoCompleteJob } = require('./services/autoCompleteService');
 
-initAutoCancelJob();
-initAutoCompleteJob();
+  initAutoCancelJob();
+  initAutoCompleteJob();
+}
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {

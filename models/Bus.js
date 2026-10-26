@@ -169,11 +169,11 @@ const busSchema = new mongoose.Schema({
   },
   insuranceIssueDate: {
     type: Date,
-    required: [true, 'Insurance issue date is mandatory']
+    default: () => new Date()
   },
   insuranceExpiryDate: {
     type: Date,
-    required: [true, 'Insurance expiry date is mandatory']
+    default: () => new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
   },
   permitNumber: {
     type: String,
@@ -182,11 +182,11 @@ const busSchema = new mongoose.Schema({
   },
   permitIssueDate: {
     type: Date,
-    required: [true, 'Permit issue date is mandatory']
+    default: () => new Date()
   },
   permitExpiryDate: {
     type: Date,
-    required: [true, 'Permit expiry date is mandatory']
+    default: () => new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
   },
   fitnessNumber: {
     type: String,

@@ -131,5 +131,6 @@ router.post('/update-position', staffController.updatePosition);
  *         description: Successful response
  */
 router.post('/trip-status', staffController.updateTripStatus);
+router.post('/update-trip-status', staffController.updateTripStatus);
 
 module.exports = router;

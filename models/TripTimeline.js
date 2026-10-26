@@ -41,6 +41,8 @@ const eventLogSchema = new mongoose.Schema({
         type: String,
         enum: [
             'trip_started',
+            'trip_running',
+            'trip_boarding',
             'arrived_at_stop',
             'departed_from_stop',
             'stop_skipped',

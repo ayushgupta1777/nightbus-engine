@@ -1,11 +1,13 @@
 // ==================== server/services/autoCompleteService.js ====================
 const Segment = require('../models/Segment');
 const Journey = require('../models/Journey');
+const Bus = require('../models/Bus');
+const Wallet = require('../models/Wallet');
 
 /**
  * AUTO-COMPLETE SERVICE
  * Scans for segments where the travelDate is in the past and marks them as completed.
- * Also updates the parent Journey status.
+ * Also credits the bus owner's wallet and updates the parent Journey status.
  */
 const autoCompletePastJourneys = async () => {
   try {
@@ -35,6 +37,21 @@ const autoCompletePastJourneys = async () => {
          };
       }
       await segment.save();
+
+      // Credit the bus owner's wallet if they haven't been credited yet
+      try {
+        const bus = await Bus.findById(segment.busId);
+        if (bus && bus.ownerId && segment.ownerEarnings > 0) {
+          await Wallet.atomicCredit(bus.ownerId, segment.ownerEarnings, {
+            source: 'booking_completion',
+            description: `Auto-complete earnings for segment #${segment._id.toString().slice(-6).toUpperCase()} (Seat ${segment.seatNumber})`,
+            metadata: { segmentId: segment._id, autoCompleted: true }
+          });
+          console.log(`[AUTO-COMPLETE] Credited ₹${segment.ownerEarnings} to owner ${bus.ownerId} for segment ${segment._id}`);
+        }
+      } catch (creditErr) {
+        console.error(`[AUTO-COMPLETE] Error crediting owner for segment ${segment._id}:`, creditErr.message);
+      }
       
       if (segment.journeyId) {
         journeyIdsToUpdate.add(segment.journeyId.toString());

@@ -159,11 +159,25 @@ walletSchema.statics.atomicCredit = async function (userId, amount, transactionD
 
     const safeAmount = Math.round(amount * 100) / 100;
 
-    // Find wallet with lock
-    const wallet = await this.findOne({ userId, isActive: true }).session(session);
+    // Find wallet with lock (auto-create if doesn't exist yet)
+    let wallet = await this.findOne({ userId, isActive: true }).session(session);
 
     if (!wallet) {
-      throw new Error('Wallet not found');
+      try {
+        const created = await this.create([{
+          userId,
+          balance: 0,
+          isActive: true,
+          lockVersion: 0
+        }], { session });
+        wallet = created[0];
+      } catch (err) {
+        if (err.code === 11000) {
+          wallet = await this.findOne({ userId, isActive: true }).session(session);
+        } else {
+          throw err;
+        }
+      }
     }
 
     if (wallet.isFrozen) {
@@ -359,10 +373,25 @@ walletSchema.statics.atomicRefund = async function (userId, amount, transactionD
 
     const safeAmount = Math.round(amount * 100) / 100;
 
-    const wallet = await this.findOne({ userId, isActive: true }).session(session);
+    // Find wallet with lock (auto-create if doesn't exist yet)
+    let wallet = await this.findOne({ userId, isActive: true }).session(session);
 
     if (!wallet) {
-      throw new Error('Wallet not found');
+      try {
+        const created = await this.create([{
+          userId,
+          balance: 0,
+          isActive: true,
+          lockVersion: 0
+        }], { session });
+        wallet = created[0];
+      } catch (err) {
+        if (err.code === 11000) {
+          wallet = await this.findOne({ userId, isActive: true }).session(session);
+        } else {
+          throw err;
+        }
+      }
     }
 
     // Check max balance
@@ -485,8 +514,8 @@ walletSchema.statics.checkLimits = async function (userId, amount, period = 'dai
   ]);
 
   const spent = totalSpent.length > 0 ? totalSpent[0].total : 0;
-  const wallet = await this.findOne({ userId });
-  const limit = period === 'daily' ? wallet.dailyLimit : wallet.monthlyLimit;
+  const wallet = await this.getOrCreate(userId);
+  const limit = period === 'daily' ? (wallet.dailyLimit || 50000) : (wallet.monthlyLimit || 200000);
 
   return {
     canProceed: (spent + amount) <= limit,

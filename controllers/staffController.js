@@ -147,6 +147,9 @@ exports.verifyBoarding = async (req, res) => {
       location
     });
 
+    // Automatically generate Exit OTP for destination drop-off
+    await segment.generateExitOTP();
+
     res.json({
       success: true,
       message: 'Passenger boarded successfully',

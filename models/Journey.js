@@ -30,7 +30,7 @@ const journeySchema = new mongoose.Schema({
   promoCode: String,
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'boarded', 'completed', 'cancelled'],
+    enum: ['pending', 'confirmed', 'boarded', 'completed', 'cancelled', 'cancellation_requested'],
     default: 'pending'
   },
   bookingDate: {

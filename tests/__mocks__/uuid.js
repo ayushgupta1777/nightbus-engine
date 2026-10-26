@@ -1,3 +1,4 @@
+let counter = 0;
 module.exports = {
-  v4: jest.fn(() => '12345678-1234-1234-1234-123456789012')
+  v4: jest.fn(() => `mock-uuid-${Date.now()}-${++counter}-${Math.random().toString(36).substring(2, 9)}`)
 };

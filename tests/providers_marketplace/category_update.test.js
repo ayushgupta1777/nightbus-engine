@@ -12,14 +12,22 @@ describe('Service Category Update & New Categories Test', () => {
     password: 'password123'
   };
 
-  let token = '';
+  let currentUserEmail = '';
 
-  beforeAll(async () => {
-    // Register & Login user
-    await request(app).post('/api/auth/register').send(testUser);
+  beforeEach(async () => {
+    // Register & Login user with unique credentials per test
+    currentUserEmail = `cat_tester_${Date.now()}_${Math.random()}@example.com`;
+    const userPayload = {
+      name: 'Category Tester',
+      email: currentUserEmail,
+      phone: `91${Math.floor(1000000000 + Math.random() * 9000000000)}`,
+      password: 'password123'
+    };
+
+    await request(app).post('/api/auth/register').send(userPayload);
     const loginRes = await request(app).post('/api/auth/login').send({
-      email: testUser.email,
-      password: testUser.password
+      email: userPayload.email,
+      password: userPayload.password
     });
     token = loginRes.body.token;
 
@@ -52,7 +60,7 @@ describe('Service Category Update & New Categories Test', () => {
       expect(res.body.data.serviceType).toBe(cat);
 
       // Verify User record was updated as well
-      const user = await User.findOne({ email: testUser.email });
+      const user = await User.findOne({ email: currentUserEmail });
       expect(user.serviceType).toBe(cat);
     });
   });

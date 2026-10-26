@@ -11,12 +11,18 @@ describe('Provider Marketplace API', () => {
 
   let token = '';
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     // Register and login to get token
-    await request(app).post('/api/auth/register').send(testUser);
+    const uniqueUser = {
+      name: 'Provider User',
+      email: `provider_${Date.now()}_${Math.random()}@example.com`,
+      phone: `91${Math.floor(1000000000 + Math.random() * 9000000000)}`,
+      password: 'password123'
+    };
+    await request(app).post('/api/auth/register').send(uniqueUser);
     const res = await request(app)
       .post('/api/auth/login')
-      .send({ email: testUser.email, password: testUser.password });
+      .send({ email: uniqueUser.email, password: uniqueUser.password });
     token = res.body.token;
   });
 
@@ -39,16 +45,30 @@ describe('Provider Marketplace API', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(providerData);
 
-      expect(res.statusCode).toBe(200).or(201); // Depending on implementation
+      expect([200, 201]).toContain(res.statusCode);
       expect(res.body.success).toBe(true);
     });
 
     it('should fail to register again if already registered', async () => {
       const providerData = {
         serviceType: 'Mechanic',
-        businessName: 'Test Mechanic Shop 2'
+        businessName: 'Test Mechanic Shop',
+        description: 'We fix buses.',
+        location: {
+          city: 'Testville',
+          coordinates: [77.1, 28.6]
+        },
+        pricing: '500 INR per visit',
+        availability: '24/7'
       };
 
+      // Register first time
+      await request(app)
+        .post('/api/marketplace/provider/register')
+        .set('Authorization', `Bearer ${token}`)
+        .send(providerData);
+
+      // Register second time
       const res = await request(app)
         .post('/api/marketplace/provider/register')
         .set('Authorization', `Bearer ${token}`)

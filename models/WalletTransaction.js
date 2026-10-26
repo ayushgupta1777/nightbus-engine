@@ -63,10 +63,10 @@ const walletTransactionSchema = new mongoose.Schema({
   source: {
     type: String,
     enum: [
-      'manual', 'cashfree', 'stripe', 'paytm', 'phonepe', 
+      'manual', 'razorpay', 'cashfree', 'stripe', 'paytm', 'phonepe', 
       'googlepay', 'upi', 'card', 'netbanking', 
       'wallet_transfer', 'promocode', 'cashback', 'referral', 'refund',
-      'money_added', 'food_booking'
+      'money_added', 'food_booking', 'booking_completion', 'trip_payout', 'yatra_payout'
     ],
     default: 'manual'
   },
