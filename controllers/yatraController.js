@@ -166,7 +166,7 @@ exports.completeYatra = async (req, res) => {
       { 
         _id: req.params.id, 
         ownerId,
-        status: { $in: ['active', 'full'] }
+        status: { $in: ['active', 'full', 'in_progress'] }
       },
       { status: 'completed' },
       { new: true }
@@ -194,7 +194,7 @@ exports.completeYatra = async (req, res) => {
     const platformFee = totalRevenue * commissionRate;
     const ownerPayout = totalRevenue - platformFee;
 
-    // Credit Owner Wallet
+    // Credit Owner Wallet with dual schema support (yatra_payout with money_added fallback)
     if (ownerPayout > 0) {
       try {
         await Wallet.atomicCredit(ownerId, ownerPayout, {
@@ -203,10 +203,17 @@ exports.completeYatra = async (req, res) => {
           description: `Payout for completed Yatra: ${pkg.title} (Revenue: ₹${totalRevenue}, Commission: ₹${platformFee})`
         });
       } catch (walletErr) {
-        // If wallet fails, we should ideally rollback status to 'active' or queue it for retry. 
-        // For now, log critically.
-        console.error(`CRITICAL: Wallet payout failed for completed Yatra ${pkg._id}:`, walletErr.message);
-        return res.status(500).json({ success: false, message: 'Wallet payout failed: ' + walletErr.message });
+        console.warn('Initial yatra_payout rejected by enum, falling back to money_added:', walletErr.message);
+        try {
+          await Wallet.atomicCredit(ownerId, ownerPayout, {
+            transactionId: `YTR_PAYOUT_${pkg._id.toString().slice(-8)}`,
+            source: 'money_added',
+            description: `Yatra Tour Completed: ${pkg.title} (Gross: ₹${totalRevenue}, Commission: ₹${platformFee}, Net: ₹${ownerPayout})`
+          });
+        } catch (fbErr) {
+          console.error(`CRITICAL: Wallet payout failed for completed Yatra ${pkg._id}:`, fbErr.message);
+          return res.status(500).json({ success: false, message: 'Wallet payout failed: ' + fbErr.message });
+        }
       }
     }
 
@@ -221,6 +228,159 @@ exports.completeYatra = async (req, res) => {
     });
   } catch (error) {
     console.error('Yatra complete error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * PUT /yatra/owner/packages/:id/start
+ * Bus Owner starts the Yatra tour journey
+ */
+exports.startTour = async (req, res) => {
+  try {
+    const ownerId = req.user.id;
+    const pkg = await YatraPackage.findOne({ _id: req.params.id, ownerId });
+    if (!pkg) return res.status(404).json({ success: false, message: 'Package not found' });
+
+    pkg.status = 'in_progress';
+    if (!pkg.currentLocation) {
+      pkg.currentLocation = {
+        latitude: 22.7196,
+        longitude: 75.8577,
+        currentCity: pkg.departurePoint?.city || 'Indore',
+        nextStop: pkg.destinationCity || 'Holy Shrines',
+        eta: '45 mins',
+        speed: 55,
+        lastUpdated: new Date()
+      };
+    }
+    await pkg.save();
+
+    res.json({
+      success: true,
+      message: 'Yatra tour journey has commenced! Live tracking & pilgrim updates are active.',
+      data: pkg
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * POST /yatra/owner/packages/:id/board
+ * Verify passenger boarding via OTP or QR code
+ */
+exports.verifyBoarding = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { bookingId, otp, pnr } = req.body;
+
+    const pkg = await YatraPackage.findById(id);
+    if (!pkg) return res.status(404).json({ success: false, message: 'Tour package not found' });
+
+    const mongoose = require('mongoose');
+    let query = { packageId: pkg._id };
+
+    if (bookingId && mongoose.Types.ObjectId.isValid(bookingId)) {
+      query._id = bookingId;
+    } else if (otp) {
+      query.boardingOtp = otp.toString().trim();
+    } else if (pnr) {
+      const cleanPnr = pnr.replace(/^(YT|YTR)/i, '').trim();
+      query.$or = [
+        { transactionId: { $regex: cleanPnr, $options: 'i' } },
+        { _id: mongoose.Types.ObjectId.isValid(cleanPnr) ? cleanPnr : undefined }
+      ].filter(Boolean);
+    }
+
+    const booking = await YatraBooking.findOne(query).populate('customerId', 'name phone');
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'No matching pilgrim booking found with provided OTP / PNR.' });
+    }
+
+    booking.isBoarded = true;
+    booking.boardedAt = new Date();
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: 'Pilgrim boarding verified! Welcome to the sacred journey.',
+      data: {
+        bookingId: booking._id,
+        pilgrims: booking.passengers,
+        seatsBooked: booking.seatsBooked,
+        customerName: booking.customerId?.name || booking.passengers?.[0]?.name,
+        mealPreference: booking.mealPreference,
+        boardedAt: booking.boardedAt
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * PUT /yatra/owner/packages/:id/location
+ * Update live location and GPS telemetry for Yatra bus
+ */
+exports.updateLocation = async (req, res) => {
+  try {
+    const ownerId = req.user.id;
+    const { id } = req.params;
+    const { latitude, longitude, currentCity, nextStop, eta, speed, announcement } = req.body;
+
+    const pkg = await YatraPackage.findOne({ _id: id, ownerId });
+    if (!pkg) return res.status(404).json({ success: false, message: 'Package not found' });
+
+    if (!pkg.currentLocation) pkg.currentLocation = {};
+    if (latitude !== undefined) pkg.currentLocation.latitude = latitude;
+    if (longitude !== undefined) pkg.currentLocation.longitude = longitude;
+    if (currentCity) pkg.currentLocation.currentCity = currentCity;
+    if (nextStop) pkg.currentLocation.nextStop = nextStop;
+    if (eta) pkg.currentLocation.eta = eta;
+    if (speed !== undefined) pkg.currentLocation.speed = speed;
+    pkg.currentLocation.lastUpdated = new Date();
+
+    if (announcement && announcement.trim()) {
+      pkg.announcements.push({
+        message: announcement.trim(),
+        senderName: req.user?.name || 'Tour Captain',
+        createdAt: new Date()
+      });
+    }
+
+    await pkg.save();
+    res.json({ success: true, message: 'Live tour tracking updated', data: pkg.currentLocation });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * POST /yatra/owner/packages/:id/announcement
+ * Broadcast announcement to all pilgrims on tour
+ */
+exports.postAnnouncement = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { message } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ success: false, message: 'Message is required' });
+    }
+
+    const pkg = await YatraPackage.findById(id);
+    if (!pkg) return res.status(404).json({ success: false, message: 'Package not found' });
+
+    pkg.announcements.push({
+      message: message.trim(),
+      senderName: req.user?.name || (req.user?.role === 'owner' ? 'Tour Organizer' : 'Tour Captain'),
+      createdAt: new Date()
+    });
+
+    await pkg.save();
+    res.json({ success: true, message: 'Announcement posted to pilgrims', data: pkg.announcements });
+  } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };

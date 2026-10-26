@@ -211,6 +211,11 @@ router.get('/owner/packages', yatraController.getOwnerPackages);
  *         description: Successful response
  */
 router.put('/owner/packages/:id', yatraController.updatePackage);
+router.put('/owner/packages/:id/start', yatraController.startTour);
+router.post('/owner/packages/:id/board', yatraController.verifyBoarding);
+router.post('/verify-boarding', yatraController.verifyBoarding);
+router.put('/owner/packages/:id/location', yatraController.updateLocation);
+router.post('/owner/packages/:id/announcement', yatraController.postAnnouncement);
 /**
  * @swagger
  * /api/yatra/owner/packages/{id}/complete:
