@@ -651,11 +651,16 @@ exports.requestPayout = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Insufficient wallet balance' });
     }
 
+    // 2. Format bankDetails safely to avoid schema Cast to string failure
+    const notesStr = typeof bankDetails === 'object' && bankDetails !== null
+      ? `A/C: ${bankDetails.accountNumber || ''}, IFSC: ${bankDetails.ifscCode || ''}, Bank: ${bankDetails.bankName || ''}${bankDetails.upiId ? ', UPI: ' + bankDetails.upiId : ''}`
+      : (typeof bankDetails === 'string' && bankDetails ? bankDetails : 'Bank / UPI Payout Request');
+
     // 2. Deduct money from wallet (locks the funds under payout purpose)
     const transactionId = `PAYOUT_REQ_${Date.now()}`;
     await exports.deductMoney(userId, numAmount, {
       purpose: 'withdrawal',
-      description: `Payout request of ₹${numAmount.toFixed(2)} to ${bankDetails || 'bank account'}`,
+      description: `Payout request of ₹${numAmount.toFixed(2)} to ${notesStr}`,
       transactionId
     });
 
@@ -664,9 +669,9 @@ exports.requestPayout = async (req, res) => {
       ownerId: userId,
       amount: numAmount,
       status: 'pending',
-      notes: bankDetails || 'Food Vendor Payout Request',
+      notes: notesStr,
       metadata: {
-        type: 'food_vendor',
+        type: req.user?.role === 'owner' ? 'bus_owner' : 'food_vendor',
         transactionId
       }
     });
