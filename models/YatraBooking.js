@@ -94,6 +94,13 @@ const yatraBookingSchema = new mongoose.Schema({
     length: 6
   },
   
+  // Boarding Check-in Verification
+  isBoarded: {
+    type: Boolean,
+    default: false
+  },
+  boardedAt: Date,
+  
   // Idempotency Key to prevent double charges
   idempotencyKey: {
     type: String,

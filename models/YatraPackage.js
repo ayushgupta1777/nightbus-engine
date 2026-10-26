@@ -104,10 +104,28 @@ const yatraPackageSchema = new mongoose.Schema({
   // Status
   status: {
     type: String,
-    enum: ['draft', 'active', 'full', 'completed', 'cancelled'],
+    enum: ['draft', 'active', 'in_progress', 'full', 'completed', 'cancelled'],
     default: 'draft',
     index: true
   },
+
+  // Live Tour Tracking
+  currentLocation: {
+    latitude: { type: Number, default: 22.7196 },
+    longitude: { type: Number, default: 75.8577 },
+    currentCity: { type: String, default: 'Indore' },
+    nextStop: { type: String, default: 'Ujjain' },
+    eta: { type: String, default: '45 mins' },
+    speed: { type: Number, default: 50 },
+    lastUpdated: { type: Date, default: Date.now }
+  },
+
+  // Pilgrim Announcements & Tour Updates
+  announcements: [{
+    message: { type: String, required: true },
+    senderName: { type: String, default: 'Tour Captain' },
+    createdAt: { type: Date, default: Date.now }
+  }],
 
   // Images
   images: [String], // URLs
