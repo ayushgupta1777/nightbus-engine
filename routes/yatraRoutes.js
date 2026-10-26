@@ -76,6 +76,7 @@ router.get('/packages/:id', yatraController.getPackageDetails);
  *         description: Successful response
  */
 router.post('/book', yatraController.bookPackage);
+router.post('/board', yatraController.verifyBoarding);
 /**
  * @swagger
  * /api/yatra/my-bookings:

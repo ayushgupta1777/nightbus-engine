@@ -274,26 +274,33 @@ exports.verifyBoarding = async (req, res) => {
   try {
     const { id } = req.params;
     const { bookingId, otp, pnr } = req.body;
-
-    const pkg = await YatraPackage.findById(id);
-    if (!pkg) return res.status(404).json({ success: false, message: 'Tour package not found' });
-
     const mongoose = require('mongoose');
-    let query = { packageId: pkg._id };
+
+    let query = {};
+    if (id && id !== 'any' && mongoose.Types.ObjectId.isValid(id)) {
+      query.packageId = id;
+    }
 
     if (bookingId && mongoose.Types.ObjectId.isValid(bookingId)) {
       query._id = bookingId;
     } else if (otp) {
       query.boardingOtp = otp.toString().trim();
     } else if (pnr) {
-      const cleanPnr = pnr.replace(/^(YT|YTR)/i, '').trim();
-      query.$or = [
-        { transactionId: { $regex: cleanPnr, $options: 'i' } },
-        { _id: mongoose.Types.ObjectId.isValid(cleanPnr) ? cleanPnr : undefined }
-      ].filter(Boolean);
+      const cleanPnr = pnr.toString().replace(/^(YT|YTR)/i, '').trim();
+      const orClauses = [
+        { boardingOtp: pnr.toString().trim() },
+        { transactionId: { $regex: cleanPnr, $options: 'i' } }
+      ];
+      if (mongoose.Types.ObjectId.isValid(cleanPnr)) {
+        orClauses.push({ _id: cleanPnr });
+      }
+      query.$or = orClauses;
     }
 
-    const booking = await YatraBooking.findOne(query).populate('customerId', 'name phone');
+    const booking = await YatraBooking.findOne(query)
+      .populate('customerId', 'name phone')
+      .populate('packageId', 'title departurePoint destinationCity busId');
+
     if (!booking) {
       return res.status(404).json({ success: false, message: 'No matching pilgrim booking found with provided OTP / PNR.' });
     }
@@ -307,6 +314,8 @@ exports.verifyBoarding = async (req, res) => {
       message: 'Pilgrim boarding verified! Welcome to the sacred journey.',
       data: {
         bookingId: booking._id,
+        pnr: `YTR${booking._id.toString().slice(-6).toUpperCase()}`,
+        packageTitle: booking.packageId?.title || 'Yatra Tour',
         pilgrims: booking.passengers,
         seatsBooked: booking.seatsBooked,
         customerName: booking.customerId?.name || booking.passengers?.[0]?.name,
@@ -535,12 +544,6 @@ exports.getPackageDetails = async (req, res) => {
       .populate('ownerId', 'name phone');
 
     if (!pkg) return res.status(404).json({ success: false, message: 'Package not found' });
-    if (!['active', 'full'].includes(pkg.status)) {
-      return res.status(404).json({ success: false, message: 'Package not available' });
-    }
-    if (pkg.startDate < new Date()) {
-      return res.status(400).json({ success: false, message: 'This Yatra has already departed/started' });
-    }
 
     res.json({ success: true, data: pkg });
   } catch (error) {
@@ -705,7 +708,7 @@ exports.getMyBookings = async (req, res) => {
     const yatraBookings = await YatraBooking.find({
       customerId: userObjectId
     })
-      .populate('packageId', 'title startDate endDate departurePoint category pricePerPerson status images pickupPoints')
+      .populate('packageId', 'title startDate endDate departurePoint destinationCity category pricePerPerson status images pickupPoints currentLocation announcements busId')
       .sort({ createdAt: -1 });
 
     console.log(`✅ Found ${yatraBookings.length} yatra bookings for ${userObjectId}`);
