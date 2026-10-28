@@ -8,7 +8,10 @@
     "dev": "nodemon server.js",
     "seed": "node seeds/seedUsers.js",
     "test": "jest --runInBand",
-    "audit-prod": "node scripts/productionReadinessAudit.js && node scripts/scaleVerificationSuite.js"
+    "audit-prod": "node scripts/productionReadinessAudit.js && node scripts/scaleVerificationSuite.js",
+    "qa:next": "node scripts/qaResolver.js --next",
+    "qa:list": "node scripts/qaResolver.js --list",
+    "qa:resolve": "node scripts/qaResolver.js --resolve"
   },
   "keywords": [],
   "author": "",
